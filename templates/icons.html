@@ -1,0 +1,22 @@
+{# Icons are from https://heroicons.com/ under an MIT license #}
+{%- macro icon_wrapper() -%}
+<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+    {{ caller() }}
+</svg>
+{%- endmacro -%}
+
+{%- macro menu_icon() -%}
+{%- call icon_wrapper() -%}<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />{%- endcall -%}
+{%- endmacro -%}
+
+{%- macro dashboard_icon() -%}
+{%- call icon_wrapper() -%}<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />{%- endcall -%}  
+{%- endmacro -%}
+
+{%- macro bookmark_icon() -%}
+{%- call icon_wrapper() -%}<path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />{%- endcall -%}
+{%- endmacro -%}
+  
+{%- macro logo_icon() -%}
+{%- call icon_wrapper() -%}<path stroke-linecap="round" stroke-linejoin="round" d="M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12h.008v.007H12V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />{%- endcall -%}
+{%- endmacro -%}

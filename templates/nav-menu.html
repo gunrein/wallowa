@@ -1,0 +1,32 @@
+{% include 'icons.html' %}
+
+{%- macro nav_link(href, label, nav_name, current_nav, icon) -%}
+<a href="{% autoescape false %}{{ href }}{% endautoescape %}" class="flex {% if nav_name == current_nav %}bg-blue-600 text-white{% else %}hover:bg-blue-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium" {% if nav_name == current_nav %}aria-current="page"{% endif %}>
+    {{- icon() -}}
+    <span class="p-1">{{ label }}</span>
+</a>
+{%- endmacro -%}
+
+{% macro nav(current_nav) %}
+    <nav class="md:w-36 w-screen md:h-screen bg-white">
+      <div class="p-2 flex">
+        <button id="navbar-toggle" class="md:hidden focus:outline-none focus:text-blue-950">
+            {{ menu_icon() }}
+        </button>
+      <a href="#" class="text-lg font-bold">
+        {{ logo_icon() }}
+      </a>
+      </div>  
+      <div class="flex-col bg-white md:h-screen hidden md:flex md:visible" id="navbar">
+        <input class="p-1 m-1 outline outline-blue-400" type="search" title="Search" placeholder="search" id="search">
+        {{ nav_link("/dashboard", "Dashboard", "dashboard", current_nav, dashboard_icon) }}
+        {{ nav_link("/bookmark", "Bookmarks", "bookmark", current_nav, bookmark_icon) }}
+      </div>
+    </nav>
+    <script>
+        // Toggle the sidebar
+        document.getElementById('navbar-toggle').addEventListener('click', function() {
+          document.querySelector('#navbar').classList.toggle('hidden');
+        });
+    </script>  
+{% endmacro %}
