@@ -58,7 +58,9 @@
 				<span>Tile 1</span>
 			</AppRailTile>
 			<AppRailTile bind:group={currentTile} name="tile-2" value={1} title="tile-2">
-				<svelte:fragment slot="lead">(icon)</svelte:fragment>
+				<svelte:fragment slot="lead">(icon)
+					<a href="/pull-requests">PRs</a>
+				</svelte:fragment>
 				<span>Tile 2</span>
 			</AppRailTile>
 			<AppRailTile bind:group={currentTile} name="tile-3" value={2} title="tile-3">
