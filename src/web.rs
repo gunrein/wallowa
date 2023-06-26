@@ -14,6 +14,14 @@ use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::{debug, info};
 
+pub async fn sources(State(state): State<Arc<AppState>>) -> Result<Html<String>, AppError> {
+    Ok(Html(render(
+        state,
+        "sources/index.html",
+        context! { current_nav => "sources" },
+    )?))
+}
+
 pub async fn dashboard(State(state): State<Arc<AppState>>) -> Result<Html<String>, AppError> {
     Ok(Html(render(
         state,
@@ -50,6 +58,7 @@ pub async fn serve(host: &str, port: &str) -> Result<()> {
         .precompressed_gzip();
 
     let app = Router::new()
+        .route("/sources", get(sources))
         .route("/dashboard", get(dashboard))
         .route("/bookmark", get(bookmark))
         .nest_service("/static", static_dir)
