@@ -25,7 +25,7 @@
               <input id="navbar-toggle" type="checkbox" />
               {{ menu_icon() }}
               {{ x_icon() }}
-          </label>
+            </label>
             <span class="px-2 py-0.5">OpSQL</span>
           </li>
           <li class="menu-item-hidden-small hidden md:block">
@@ -33,8 +33,10 @@
               <input type="search" placeholder="Search" class="input input-bordered w-76 md:w-36" />
             </div>
           </li>
-          {{ nav_link("/dashboard", "Dashboard", "dashboard", current_nav, dashboard_icon) }}
-          {{ nav_link("/bookmark", "Bookmarks", "bookmark", current_nav, bookmark_icon) }}
+          {# {{ nav_link("/bookmark", "Bookmarks", "bookmark", current_nav, bookmark_icon) }} #}
+          {{ nav_link("/dashboard", "Overview", "dashboard", current_nav, dashboard_icon) }}
+          {{ nav_link("/github", "GitHub", "github", current_nav, dashboard_icon) }}
+          {{ nav_link("/pagerduty", "PagerDuty", "pagerduty", current_nav, dashboard_icon) }}
           {{ nav_link("/sources", "Sources", "sources", current_nav, sources_icon) }}
         </ul>
       </nav>
