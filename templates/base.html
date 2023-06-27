@@ -1,16 +1,56 @@
-{%- import "nav-menu.html" as nav -%}
+{%- include 'icons.html' -%}
+{%- macro nav_link(href, label, nav_name, current_nav, icon) -%}
+<li>
+  <a href="{% autoescape false %}{{ href }}{% endautoescape %}" class="menu-item-hidden-small hidden md:inline-flex md:w-40 w-76 {% if nav_name == current_nav %}active{% endif %}" {% if nav_name == current_nav %}aria-current="page"{% endif %}>
+    {{- icon() -}}
+    {{ label }}
+  </a>
+</li>
+{%- endmacro -%}
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}wallowa{% endblock %}</title>
+    <title>{% block title %}OpSQL{% endblock %}</title>
     <link href="/static/styles.css" rel="stylesheet" />
     {% block head %}{% endblock %}
   </head>
   <body>
-    <div class="md:flex flex-row">
-    {% block content %}{% endblock %}
+    <div class="flex-none md:flex">
+      <nav class="flex">
+        <ul class="flex-col menu bg-base-200 w-full md:w-44 md:min-h-screen">
+          <li class="menu-title flex-row">
+            <label class="btn btn-xs btn-circle swap swap-rotate md:hidden">
+              <input id="navbar-toggle" type="checkbox" />
+              {{ menu_icon() }}
+              {{ x_icon() }}
+            <!--
+              <svg class="swap-off fill-current" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 512 512"><path d="M64,384H448V341.33H64Zm0-106.67H448V234.67H64ZM64,128v42.67H448V128Z"/></svg>
+              <svg class="swap-on fill-current" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 512 512"><polygon points="400 145.49 366.51 112 256 222.51 145.49 112 112 145.49 222.51 256 112 366.51 145.49 400 256 289.49 366.51 400 400 366.51 289.49 256 400 145.49"/></svg>
+            -->
+          </label>
+            <span class="px-2 py-0.5">OpSQL</span>
+          </li>
+          <li class="menu-item-hidden-small hidden md:block">
+            <div class="form-control">
+              <input type="search" placeholder="Search" class="input input-bordered w-76 md:w-36" />
+            </div>
+          </li>
+          {{ nav_link("/dashboard", "Dashboard", "dashboard", current_nav, dashboard_icon) }}
+          {{ nav_link("/bookmark", "Bookmarks", "bookmark", current_nav, bookmark_icon) }}
+          {{ nav_link("/sources", "Sources", "sources", current_nav, sources_icon) }}
+        </ul>
+      </nav>
+      {% block content %}{% endblock %}
     </div>
+    <script>
+      // Toggle the menu
+      document.getElementById('navbar-toggle').addEventListener('change', function(ev) {
+        document.querySelectorAll('.menu-item-hidden-small').forEach((node) => {
+          node.classList.toggle('hidden');
+        });
+      });
+    </script>     
   </body>
 </html>
