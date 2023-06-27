@@ -8,19 +8,49 @@
   <div class="flex-col">
     <h1 class="text-3xl bold">Sources</h1>    
 
-    <div class="p-3">
-      <div class="card card-compact lg:card-side bg-base-100 shadow">
-        <figure class="w-24 h-16"><img src="/static/sources/GitHub_Logo.png" alt="GitHub logo"/></figure>
-        <div class="card-body">
-          <p>Collect Pull Request activity data from GitHub.</p>
-          <p>Last fetched: TODO</p>
-          <div class="card-actions justify-end">
-            <button class="btn btn-primary">{{- icons.fetch_icon() -}}Fetch now</button>
-          </div>
-        </div>
-      </div>
+    <div class="overflow-x-auto">
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="hidden md:table-cell">
+              <label>
+                <input id="checkbox-all-sources" type="checkbox" class="checkbox-xs" />
+              </label>
+            </th>
+            <th>Source</th>
+            <th class="hidden sm:table-cell">Description</th>
+            <th>Last fetched at</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="hidden md:table-cell">
+              <label>
+                <input id="checkbox-github" type="checkbox" class="checkbox-xs" />
+              </label>
+            </td>
+            <td>
+              <div class="flex">
+                <img class="w-5" src="/static/sources/github-mark.svg" alt="GitHub logo" role="img" />
+                <span class="px-1">GitHub</span>
+              </div>
+            </td>
+            <td class="hidden sm:table-cell">
+              Collect Pull Request activity data from
+              <a href="https://github.com/" target="_blank" class="link" referrerpolicy="same-origin">GitHub</a>.
+            </td>
+            <td>
+              <div class="flex items-center">
+                2020-01-06 12:51:00Z
+                <div class="lg:tooltip tooltip-left" data-tip="Fetch now">
+                  <button class="btn btn-ghost btn-xs">{{- icons.fetch_icon() -}}</button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-
   </div>
 </div>
 {% endblock %}
