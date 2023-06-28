@@ -19,6 +19,7 @@ futures = "0.3"
 inquire = "0.6"
 minijinja-autoreload = "0.34"
 minijinja = { version = "0.34", features = ["source"] }
+parse_link_header = "0.3"
 r2d2 = "0.8"
 reqwest = { version = "0.11", features = ["json"] }
 serde = { version = "1", features = ["derive"] }
@@ -28,3 +29,6 @@ tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "signal
 tower-http = { version = "0.4", features = ["trace", "fs"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
+
+[dev-dependencies]
+float-cmp = "0.9"

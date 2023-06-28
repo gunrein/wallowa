@@ -1,14 +1,11 @@
 use std::sync::OnceLock;
 
 use anyhow::Result;
-use db::open_db_pool;
-use dotenvy::dotenv;
 use tokio::sync::RwLock;
+use dotenvy::dotenv;
 use config::Config;
-use web::serve;
-
-mod db;
-mod web;
+use opsql::db::open_db_pool;
+use opsql::web::serve;
 
 pub static CONFIG: OnceLock<RwLock<Config>> = OnceLock::new();
 
