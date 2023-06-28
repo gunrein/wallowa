@@ -1,13 +1,13 @@
 use chrono::{TimeZone, Utc};
 use float_cmp::approx_eq;
-use std::{fs, path::Path};
 use opsql::{
     db::open_db_pool,
-    sources::github::{fetch_commits, fetch_pulls, load_commits, load_pulls, ResponseInfo},
     queries::github::{
         count_commits, count_pulls, merged_pr_duration_30_day_rolling_avg_hours, DurationByDay,
     },
+    sources::github::{fetch_commits, fetch_pulls, load_commits, load_pulls, ResponseInfo},
 };
+use std::{fs, path::Path};
 
 #[test]
 fn test_github_commits() {
