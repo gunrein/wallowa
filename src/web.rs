@@ -3,7 +3,7 @@ use axum::{
     extract::State,
     http::StatusCode,
     response::{Html, IntoResponse, Response},
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use minijinja::{context, Environment, Source};
@@ -38,6 +38,14 @@ pub async fn bookmark(State(state): State<Arc<AppState>>) -> Result<Html<String>
     )?))
 }
 
+pub async fn fetch_source(State(state): State<Arc<AppState>>) -> Result<Html<String>, AppError> {
+    Ok(Html(render(
+        state,
+        "sources/fetch_source.html",
+        context! {},
+    )?))
+}
+
 pub async fn serve(host: &str, port: &str) -> Result<()> {
     let reloader = AutoReloader::new(|notifier| {
         let mut env = Environment::new();
@@ -58,6 +66,7 @@ pub async fn serve(host: &str, port: &str) -> Result<()> {
         .precompressed_gzip();
 
     let app = Router::new()
+        .route("/sources/fetch", post(fetch_source))
         .route("/sources", get(sources))
         .route("/dashboard", get(dashboard))
         .route("/bookmark", get(bookmark))

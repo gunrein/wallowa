@@ -43,7 +43,10 @@
               <div class="flex items-center">
                 2020-01-06 12:51:00Z
                 <div class="lg:tooltip tooltip-left" data-tip="Fetch now">
-                  <button class="btn btn-ghost btn-xs">{{- icons.fetch_icon() -}}</button>
+
+                  <button hx-post="/sources/fetch" hx-trigger="click" hx-target="#the_target" hx-swap="innerHTML" class="btn btn-ghost btn-xs">{{- icons.fetch_icon() -}}</button>
+
+                  <div id="the_target">target</div>
                 </div>
               </div>
             </td>
