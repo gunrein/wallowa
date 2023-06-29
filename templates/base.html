@@ -14,7 +14,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OpSQL {% block title %}{% endblock %}</title>
     <link href="/static/styles.css" rel="stylesheet" />
-    <script type="module" src="/static/main.js"></script>
     {% block head %}{% endblock %}
   </head>
   <body>
@@ -43,13 +42,6 @@
       </nav>
       {% block content %}{% endblock %}
     </div>
-    <script>
-      // Toggle the menu
-      document.getElementById('navbar-toggle').addEventListener('change', function(ev) {
-        document.querySelectorAll('.menu-item-hidden-small').forEach((node) => {
-          node.classList.toggle('hidden');
-        });
-      });
-    </script>     
+    <script type="module" src="/static/main.js"></script>
   </body>
 </html>
