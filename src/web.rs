@@ -1,6 +1,6 @@
 use anyhow::Result;
 use axum::{
-    extract::State,
+    extract::{State, Path},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
     routing::{get, post},
@@ -8,8 +8,8 @@ use axum::{
 };
 use minijinja::{context, Environment, Source};
 use minijinja_autoreload::AutoReloader;
-use std::{net::SocketAddr, sync::Arc};
-use tokio::signal;
+use std::{net::SocketAddr, sync::Arc, time::Duration};
+use tokio::{signal, time::sleep};
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::{debug, info};
@@ -38,11 +38,17 @@ pub async fn bookmark(State(state): State<Arc<AppState>>) -> Result<Html<String>
     )?))
 }
 
-pub async fn fetch_source(State(state): State<Arc<AppState>>) -> Result<Html<String>, AppError> {
+pub async fn fetch_source(State(state): State<Arc<AppState>>, Path(source_id): Path<crate::sources::Source>) -> Result<Html<String>, AppError> {
+    let _ = sleep(Duration::from_millis(1000)).await;
+    let timestamp = "2023-06-30 09:27:43Z";
+
     Ok(Html(render(
         state,
         "sources/fetch_source.html",
-        context! {},
+        context! {
+            source_id => source_id,
+            timestamp => timestamp,
+        },
     )?))
 }
 
@@ -66,7 +72,7 @@ pub async fn serve(host: &str, port: &str) -> Result<()> {
         .precompressed_gzip();
 
     let app = Router::new()
-        .route("/sources/fetch", post(fetch_source))
+        .route("/sources/:source_id/fetch", post(fetch_source))
         .route("/sources", get(sources))
         .route("/dashboard", get(dashboard))
         .route("/bookmark", get(bookmark))

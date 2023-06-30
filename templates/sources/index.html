@@ -41,12 +41,28 @@
             </td>
             <td>
               <div class="flex items-center">
-                2020-01-06 12:51:00Z
-                <div class="lg:tooltip tooltip-left" data-tip="Fetch now">
-
-                  <button hx-post="/sources/fetch" hx-trigger="click" hx-target="#the_target" hx-swap="innerHTML" class="btn btn-ghost btn-xs">{{- icons.fetch_icon() -}}</button>
-
-                  <div id="the_target">target</div>
+                <div>
+                  <span id="github_last_fetched">2020-01-06 12:51:00Z</span>
+                </div>
+                <div 
+                     data-tip="Fetch now"
+                     class="lg:tooltip tooltip-left">
+                  <button hx-post="/sources/github/fetch"
+                          hx-target="#github_last_fetched"
+                          hx-ext="disable-element"
+                          hx-disable-element="self"
+                          x-data="{ indicator: false, toggle() { this.indicator = ! this.indicator } }"
+                          @click="toggle()"
+                          x-on:htmx:after-swap.window="toggle()"
+                          class="btn btn-ghost btn-xs">
+                    <span x-show="! indicator">
+                      {{- icons.fetch_icon() -}}
+                    </span>
+                    <span x-cloak
+                          x-show="indicator"
+                          class="loading loading-spinner p-1">
+                    </span>
+                  </button>
                 </div>
               </div>
             </td>

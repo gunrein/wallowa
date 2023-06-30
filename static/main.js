@@ -1,4 +1,6 @@
 import "/static/htmx-1.9.2.min.js";
+import "/static/htmx-ext-disable-element-1.9.2.js";
+import "/static/alpinejs-3.12.1.min.js";
 
 htmx.onLoad(function(elt) {
   // Navigation menu toggle
