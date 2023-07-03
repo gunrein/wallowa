@@ -71,7 +71,7 @@ fn test_github_pulls() {
         response: file_contents.clone(),
         watermark: Utc::now(),
     };
-    fetch_pulls(pool.clone(), &vec![response_info]).expect("Unable to fetch pulls");
+    fetch_pulls(&pool, &vec![response_info]).expect("Unable to fetch pulls");
     let sql = "SELECT count(*) FROM wallowa_raw_data;";
     let count: usize = pool
         .get()

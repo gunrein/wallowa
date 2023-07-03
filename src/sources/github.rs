@@ -1,13 +1,35 @@
 use crate::db::Pool;
-use anyhow::Result;
-use chrono::{DateTime, LocalResult, TimeZone, Utc};
+use anyhow::{bail, Result};
+use chrono::{DateTime, LocalResult, NaiveDateTime, TimeZone, Utc};
 use duckdb::params;
-use futures::{stream, StreamExt};
+use futures::future::join_all;
 use reqwest::{
     header::{HeaderMap, HeaderValue, AUTHORIZATION, LINK},
     Url,
 };
 use tracing::{debug, error, info};
+
+/// Return the timestamp of the most recent API request
+pub fn latest_fetch(pool: &Pool) -> Result<NaiveDateTime> {
+    let conn = pool.get()?;
+
+    let sql = r#"
+SELECT watermark
+FROM wallowa_watermark
+WHERE prefix(request_url,'https://api.github.com/')
+ORDER BY watermark DESC LIMIT 1
+"#;
+    let watermark: Result<NaiveDateTime, duckdb::Error> =
+        match conn.query_row(sql, [], |row| row.get(0)) {
+            Ok(w) => Ok(w),
+            Err(duckdb::Error::QueryReturnedNoRows) => {
+                Ok(NaiveDateTime::from_timestamp_opt(0, 0).unwrap())
+            } // Return a default if there are no existing rows
+            Err(e) => bail!(e), // Unexpected error
+        };
+
+    Ok(watermark?)
+}
 
 /// Load all outstanding Github pulls into the `github_pull` table
 pub fn load_pulls(pool: Pool) -> Result<()> {
@@ -119,7 +141,7 @@ AND data_type = 'pulls';
 }
 
 /// Insert raw pulls data from a single Github API response
-fn fetch_pulls_single_repo(pool: Pool, response: &ResponseInfo) -> Result<()> {
+fn insert_pulls_single_repo(pool: &Pool, response: &ResponseInfo) -> Result<()> {
     let mut conn = pool.get()?;
 
     // Insert the raw JSON into the database
@@ -160,9 +182,8 @@ INSERT OR REPLACE INTO wallowa_watermark (
     Ok(())
 }
 
-/// Insert raw data for all of the pulls from the given GitHub API responses
-pub fn fetch_pulls(pool: Pool, responses: &Vec<ResponseInfo>) -> Result<()> {
-    // Fetch the commits from each response
+/// Request the latest pulls from the given GitHub API responses and insert them into the database
+pub fn fetch_pulls(pool: &Pool, responses: &Vec<ResponseInfo>) -> Result<NaiveDateTime> {
     for response in responses {
         if response.status != 200 {
             error!(
@@ -172,10 +193,10 @@ pub fn fetch_pulls(pool: Pool, responses: &Vec<ResponseInfo>) -> Result<()> {
             continue;
         }
 
-        fetch_pulls_single_repo(pool.clone(), response)?;
+        insert_pulls_single_repo(pool, response)?;
     }
 
-    Ok(())
+    latest_fetch(pool)
 }
 
 /// Load all outstanding Github commits into the `github_commit` table
@@ -354,11 +375,8 @@ LIMIT 1; -- There shouldn't be duplicate rows for the same `request_url`, but ju
     Ok(watermark)
 }
 
-// TODO make this configurable
-const MAX_CONCURRENT_REQUESTS: usize = 3;
-
 /// Request commits from the GitHub API
-pub async fn request_commits(pool: Pool, repo_strings: &[String]) -> Result<Vec<ResponseInfo>> {
+pub async fn request_commits(pool: &Pool, repo_strings: &[String]) -> Result<Vec<ResponseInfo>> {
     let repos: Vec<(&str, &str)> = repo_strings
         .iter()
         .map(|s| parse_repo_str(s))
@@ -389,7 +407,7 @@ struct GithubRequest {
     url: String,
 }
 
-async fn make_requests(pool: Pool, requests: &[GithubRequest]) -> Result<Vec<ResponseInfo>> {
+async fn make_requests(pool: &Pool, requests: &[GithubRequest]) -> Result<Vec<ResponseInfo>> {
     let github_api_token: String = std::env::var("WALLOWA_GITHUB_AUTH_TOKEN")
         .expect("Missing WALLOWA_GITHUB_AUTH_TOKEN env var");
 
@@ -403,7 +421,7 @@ async fn make_requests(pool: Pool, requests: &[GithubRequest]) -> Result<Vec<Res
         .default_headers(headers)
         .build()?;
 
-    let responses = stream::iter(requests)
+    let request_futs = requests.iter()
     .map(|request| {
         let url = &request.url;
         let client = &client;
@@ -478,13 +496,8 @@ async fn make_requests(pool: Pool, requests: &[GithubRequest]) -> Result<Vec<Res
             }
             Ok(inner_responses)
         }
-    })
-    .buffer_unordered(MAX_CONCURRENT_REQUESTS);
-
-    // Wait for the streams to finish
-    let computed = responses
-        .collect::<Vec<Result<Vec<ResponseInfo>, anyhow::Error>>>()
-        .await;
+    });
+    let computed: Vec<Result<Vec<ResponseInfo>, anyhow::Error>> = join_all(request_futs).await;
 
     // Not using `iter::collect()` here because we don't want to stop collecting the results if one of them fails
     let mut all_responses: Vec<ResponseInfo> = vec![];
@@ -525,5 +538,5 @@ pub async fn request_pulls(pool: Pool, repo_strings: &[String]) -> Result<Vec<Re
         })
         .collect::<Vec<_>>();
 
-    make_requests(pool, &requests).await
+    make_requests(&pool, &requests).await
 }

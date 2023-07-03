@@ -1,6 +1,6 @@
 use anyhow::Result;
 use axum::{
-    extract::{State, Path},
+    extract::{Path, State},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
     routing::{get, post},
@@ -13,6 +13,11 @@ use tokio::{signal, time::sleep};
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::{debug, info};
+
+use crate::{
+    db::{open_db_pool, Pool},
+    sources::github::{fetch_pulls, request_pulls},
+};
 
 pub async fn sources(State(state): State<Arc<AppState>>) -> Result<Html<String>, AppError> {
     Ok(Html(render(
@@ -38,9 +43,23 @@ pub async fn bookmark(State(state): State<Arc<AppState>>) -> Result<Html<String>
     )?))
 }
 
-pub async fn fetch_source(State(state): State<Arc<AppState>>, Path(source_id): Path<crate::sources::Source>) -> Result<Html<String>, AppError> {
+pub async fn fetch_source(
+    State(state): State<Arc<AppState>>,
+    Path(source_id): Path<crate::sources::Source>,
+) -> Result<Html<String>, AppError> {
     let _ = sleep(Duration::from_millis(1000)).await;
-    let timestamp = "2023-06-30 09:27:43Z";
+
+    let timestamp = match source_id {
+        crate::sources::Source::Github => {
+            // TODO get this from config
+            //let repos = vec!["open-telemetry/opentelemetry-rust".to_string(), "gunrein/wallowa".to_string()];
+            let repos = vec!["gunrein/wallowa".to_string()];
+
+            let responses = request_pulls(state.pool.clone(), &repos).await?;
+
+            fetch_pulls(&state.pool, &responses)?
+        }
+    };
 
     Ok(Html(render(
         state,
@@ -62,8 +81,12 @@ pub async fn serve(host: &str, port: &str) -> Result<()> {
         Ok(env)
     });
 
+    // TODO load parameters from config
+    let pool = open_db_pool(":memory:", 2)?;
+
     let state = Arc::new(AppState {
         template_loader: reloader,
+        pool,
     });
 
     // TODO embed static files
@@ -134,6 +157,7 @@ async fn shutdown_signal() {
 
 pub struct AppState {
     template_loader: AutoReloader,
+    pool: Pool,
 }
 
 // Adapted from https://github.com/tokio-rs/axum/blob/c97967252de9741b602f400dc2b25c8a33216039/examples/anyhow-error-response/src/main.rs under MIT license
