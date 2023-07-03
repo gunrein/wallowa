@@ -63,54 +63,11 @@ CREATE TABLE IF NOT EXISTS wallowa_raw_data (
     metadata JSON,
     "data" VARCHAR
 );"#,
-        // Create the `github_commit` table
-        r#"
-CREATE SEQUENCE seq_github_commit;
-CREATE TABLE IF NOT EXISTS github_commit (
-    id INTEGER PRIMARY KEY DEFAULT NEXTVAL('seq_github_commit'),
-    raw_data_id INTEGER,
-    "data_source" VARCHAR,
-    "owner" VARCHAR,
-    repo VARCHAR,
-    sha VARCHAR,
-    author VARCHAR,
-    committer VARCHAR,
-    "message" VARCHAR,
-    "url" VARCHAR,
-    "timestamp" TIMESTAMP,
-    UNIQUE (sha, "owner", repo)
-);"#,
         // Create the `wallowa_watermark` table to store the watermark times for API requests
         r#"
 CREATE TABLE IF NOT EXISTS wallowa_watermark (
     request_url VARCHAR UNIQUE NOT NULL,
     watermark TIMESTAMP
-);"#,
-        // Create the `github_pull` table
-        r#"
-CREATE SEQUENCE seq_github_pull;
-CREATE TABLE IF NOT EXISTS github_pull (
-    id INTEGER PRIMARY KEY DEFAULT NEXTVAL('seq_github_pull'),
-    raw_data_id INTEGER,
-    "data_source" VARCHAR,
-    "owner" VARCHAR,
-    repo VARCHAR,
-    "number" VARCHAR,
-    "state" VARCHAR,
-    user VARCHAR,
-    assignee VARCHAR,
-    assignees JSON,
-    requested_reviewers JSON,
-    requested_teams JSON,
-    title VARCHAR,
-    "url" VARCHAR,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    closed_at TIMESTAMP,
-    merged_at TIMESTAMP,
-    author_association VARCHAR,
-    draft BOOLEAN,
-    UNIQUE (number, owner, repo)
 );"#,
     ];
 

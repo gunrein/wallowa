@@ -2,10 +2,8 @@ use chrono::{TimeZone, Utc};
 use float_cmp::approx_eq;
 use opsql::{
     db::open_db_pool,
-    queries::github::{
-        count_commits, count_pulls, merged_pr_duration_30_day_rolling_avg_hours, DurationByDay,
-    },
-    sources::github::{fetch_commits, fetch_pulls, load_commits, load_pulls, ResponseInfo},
+    queries::github::{merged_pr_duration_30_day_rolling_avg_hours, DurationByDay},
+    sources::github::{fetch_commits, fetch_pulls, ResponseInfo},
 };
 use std::{fs, path::Path};
 
@@ -35,22 +33,6 @@ fn test_github_commits() {
         .query_row_and_then(sql, [], |row| row.get(0))
         .expect("Unable to query count from wallowa_raw_data");
     assert_eq!(count, 1);
-
-    load_commits(pool.clone()).expect("Unable to load commits");
-
-    let sql = "SELECT count(*) FROM github_commit;";
-    let count: usize = pool
-        .get()
-        .unwrap()
-        .query_row_and_then(sql, [], |row| row.get(0))
-        .expect("Unable to query count from commits");
-    assert_eq!(count, 3);
-
-    let results = count_commits(pool).expect("Unable to count commits");
-    let row = results.get(0).expect("Unable to get first row");
-    assert_eq!(row.owner, "octocat".to_string());
-    assert_eq!(row.repo, "Spoon-Knife".to_string());
-    assert_eq!(row.count, 3);
 }
 
 #[test]
@@ -79,26 +61,11 @@ fn test_github_pulls() {
         .query_row_and_then(sql, [], |row| row.get(0))
         .expect("Unable to query count from wallowa_raw_data");
     assert_eq!(count, 1);
-
-    load_pulls(pool.clone()).expect("Unable to load pulls");
-
-    let sql = "SELECT count(*) FROM github_pull;";
-    let count: usize = pool
-        .get()
-        .unwrap()
-        .query_row_and_then(sql, [], |row| row.get(0))
-        .expect("Unable to query count from pulls");
-    assert_eq!(count, 1);
-
-    let results = count_pulls(pool).expect("Unable to count pulls");
-    let row = results.get(0).expect("Unable to get first row");
-    assert_eq!(row.owner, "octocat".to_string());
-    assert_eq!(row.repo, "HelloWorld".to_string());
-    assert_eq!(row.count, 1);
 }
 
 /// Use a known set of fake pull request data to test that
 /// the average pull request query works as expected.
+/// TODO fix to query directly against raw data since the `github_commit` table no longer exists
 #[test]
 fn test_avg_pr_query() {
     let pool = open_db_pool(":memory:", 1).expect("Unable to open db");

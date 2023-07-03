@@ -12,6 +12,7 @@ pub struct CountByRepo {
 }
 
 /// Count the number of commits by repo
+/// TODO fix to query directly against raw data since the `github_commit` table no longer exists
 pub fn count_commits(pool: Pool) -> Result<Vec<CountByRepo>> {
     debug!("Running `count_commits`");
 
@@ -38,6 +39,7 @@ ORDER BY "owner", repo;
 }
 
 /// Count the number of pulls by repo
+/// TODO fix to query directly against raw data since the `github_commit` table no longer exists
 pub fn count_pulls(pool: Pool) -> Result<Vec<CountByRepo>> {
     debug!("Running `count_pulls`");
 
