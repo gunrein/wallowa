@@ -16,14 +16,19 @@ use tracing::{debug, info};
 
 use crate::{
     db::{open_db_pool, Pool},
-    sources::github::{fetch_pulls, request_pulls},
+    sources::github::{fetch_pulls, latest_fetch, request_pulls},
 };
 
 pub async fn sources(State(state): State<Arc<AppState>>) -> Result<Html<String>, AppError> {
+    let github_last_fetched = latest_fetch(&state.pool)?;
+
     Ok(Html(render(
         state,
         "sources/index.html",
-        context! { current_nav => "sources" },
+        context! {
+            current_nav => "sources",
+            github_last_fetched,
+        },
     )?))
 }
 
@@ -66,7 +71,7 @@ pub async fn fetch_source(
         "sources/fetch_source.html",
         context! {
             source_id => source_id,
-            timestamp => timestamp,
+            timestamp => timestamp.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
         },
     )?))
 }
