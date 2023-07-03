@@ -9,6 +9,16 @@ use tokio::sync::RwLock;
 
 pub static CONFIG: OnceLock<RwLock<Config>> = OnceLock::new();
 
+pub async fn get_config<T: for<'de> serde::de::Deserialize<'de>>(key: &str) -> Result<T> {
+    let val = if let Some(lock) = CONFIG.get() {
+        lock.read().await.get::<T>(key)
+    } else {
+        panic!("Unable to get lock on config");
+    }?;
+
+    Ok(val)
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenv().ok();
@@ -25,14 +35,10 @@ async fn main() -> Result<()> {
 
     let _ = CONFIG.set(RwLock::new(config));
 
-    let database_string = if let Some(lock) = CONFIG.get() {
-        lock.read().await.get_string("database")?
-    } else {
-        "opsql.db".to_string()
-    };
-    let _pool = open_db_pool(database_string.as_str(), 1)?;
+    let database_string: String = get_config("database").await?;
+    let pool = open_db_pool(database_string.as_str(), 1)?;
 
-    serve("127.0.0.1", "3825").await?;
+    serve("127.0.0.1", "3825", pool).await?;
 
     Ok(())
 }
