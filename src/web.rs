@@ -8,19 +8,21 @@ use axum::{
 };
 use minijinja::{context, Environment, Source};
 use minijinja_autoreload::AutoReloader;
-use std::{net::SocketAddr, sync::Arc, time::Duration};
-use tokio::{signal, time::sleep};
+use std::{net::SocketAddr, sync::Arc};
+use tokio::signal;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::{debug, info};
 
 use crate::{
-    db::{open_db_pool, Pool},
+    db::Pool,
     sources::github::{fetch_pulls, latest_fetch, request_pulls},
 };
 
 pub async fn sources(State(state): State<Arc<AppState>>) -> Result<Html<String>, AppError> {
-    let github_last_fetched = latest_fetch(&state.pool)?;
+    let github_last_fetched = latest_fetch(&state.pool)?
+        .format("%Y-%m-%dT%H:%M:%SZ")
+        .to_string();
 
     Ok(Html(render(
         state,
@@ -52,15 +54,13 @@ pub async fn fetch_source(
     State(state): State<Arc<AppState>>,
     Path(source_id): Path<crate::sources::Source>,
 ) -> Result<Html<String>, AppError> {
-    let _ = sleep(Duration::from_millis(1000)).await;
-
     let timestamp = match source_id {
         crate::sources::Source::Github => {
             // TODO get this from config
             //let repos = vec!["open-telemetry/opentelemetry-rust".to_string(), "gunrein/wallowa".to_string()];
             let repos = vec!["gunrein/wallowa".to_string()];
 
-            let responses = request_pulls(state.pool.clone(), &repos).await?;
+            let responses = request_pulls(&state.pool, &repos).await?;
 
             fetch_pulls(&state.pool, &responses)?
         }
@@ -76,7 +76,7 @@ pub async fn fetch_source(
     )?))
 }
 
-pub async fn serve(host: &str, port: &str) -> Result<()> {
+pub async fn serve(host: &str, port: &str, pool: Pool) -> Result<()> {
     let reloader = AutoReloader::new(|notifier| {
         let mut env = Environment::new();
         // TODO embed templates
@@ -85,9 +85,6 @@ pub async fn serve(host: &str, port: &str) -> Result<()> {
         env.set_source(Source::from_path(template_path));
         Ok(env)
     });
-
-    // TODO load parameters from config
-    let pool = open_db_pool(":memory:", 2)?;
 
     let state = Arc::new(AppState {
         template_loader: reloader,
