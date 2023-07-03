@@ -331,7 +331,7 @@ async fn make_requests(pool: &Pool, requests: &[GithubRequest]) -> Result<Vec<Re
 }
 
 /// Request Pull Requests (PRs) from the GitHub API
-pub async fn request_pulls(pool: Pool, repo_strings: &[String]) -> Result<Vec<ResponseInfo>> {
+pub async fn request_pulls(pool: &Pool, repo_strings: &[String]) -> Result<Vec<ResponseInfo>> {
     let repos: Vec<(&str, &str)> = repo_strings
         .iter()
         .map(|s| parse_repo_str(s))
@@ -353,5 +353,5 @@ pub async fn request_pulls(pool: Pool, repo_strings: &[String]) -> Result<Vec<Re
         })
         .collect::<Vec<_>>();
 
-    make_requests(&pool, &requests).await
+    make_requests(pool, &requests).await
 }
