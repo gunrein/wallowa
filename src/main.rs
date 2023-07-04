@@ -1,23 +1,9 @@
-use std::sync::OnceLock;
-
 use anyhow::Result;
-use config::Config;
 use dotenvy::dotenv;
 use opsql::db::open_db_pool;
 use opsql::web::serve;
+use opsql::{get_config, CONFIG};
 use tokio::sync::RwLock;
-
-pub static CONFIG: OnceLock<RwLock<Config>> = OnceLock::new();
-
-pub async fn get_config<T: for<'de> serde::de::Deserialize<'de>>(key: &str) -> Result<T> {
-    let val = if let Some(lock) = CONFIG.get() {
-        lock.read().await.get::<T>(key)
-    } else {
-        panic!("Unable to get lock on config");
-    }?;
-
-    Ok(val)
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {

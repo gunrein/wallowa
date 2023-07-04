@@ -1,4 +1,4 @@
-use crate::db::Pool;
+use crate::{db::Pool, get_config};
 use anyhow::{bail, Result};
 use chrono::{DateTime, LocalResult, NaiveDateTime, TimeZone, Utc};
 use duckdb::params;
@@ -223,7 +223,8 @@ struct GithubRequest {
 }
 
 async fn make_requests(pool: &Pool, requests: &[GithubRequest]) -> Result<Vec<ResponseInfo>> {
-    let github_api_token: String = std::env::var("WALLOWA_GITHUB_AUTH_TOKEN")
+    let github_api_token: String = get_config("GITHUB_AUTH_TOKEN")
+        .await
         .expect("Missing WALLOWA_GITHUB_AUTH_TOKEN env var");
 
     let mut headers = HeaderMap::new();
