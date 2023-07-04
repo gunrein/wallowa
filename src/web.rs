@@ -15,6 +15,7 @@ use tower_http::trace::TraceLayer;
 use tracing::{debug, info};
 
 use crate::{
+    config_value,
     db::Pool,
     sources::github::{fetch_pulls, latest_fetch, request_pulls},
 };
@@ -56,12 +57,10 @@ pub async fn fetch_source(
 ) -> Result<Html<String>, AppError> {
     let timestamp = match source_id {
         crate::sources::Source::Github => {
-            // TODO get this from config
-            //let repos = vec!["open-telemetry/opentelemetry-rust".to_string(), "gunrein/wallowa".to_string()];
-            let repos = vec!["gunrein/wallowa".to_string()];
-
+            let repos: Vec<String> = config_value("github.repos")
+                .await
+                .expect("Unable to get config for `github.repos`");
             let responses = request_pulls(&state.pool, &repos).await?;
-
             fetch_pulls(&state.pool, &responses)?
         }
     };

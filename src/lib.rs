@@ -13,7 +13,8 @@ pub mod web;
 pub static CONFIG: OnceLock<RwLock<Config>> = OnceLock::new();
 
 /// Utility for getting the config value for a given `key`
-pub async fn get_config<T: for<'de> serde::de::Deserialize<'de>>(key: &str) -> Result<T> {
+//pub async fn config_value<T: for<'de> serde::de::Deserialize<'de>>(key: &str) -> Result<T> {
+pub async fn config_value<'de, T: serde::de::Deserialize<'de>>(key: &str) -> Result<T> {
     let val = if let Some(lock) = CONFIG.get() {
         lock.read().await.get::<T>(key)
     } else {
@@ -21,4 +22,25 @@ pub async fn get_config<T: for<'de> serde::de::Deserialize<'de>>(key: &str) -> R
     }?;
 
     Ok(val)
+}
+
+/// Initialize the configuration system
+pub fn init_config(config_path: &str) -> Result<()> {
+    let env_source = config::Environment::with_prefix("WALLOWA")
+        .try_parsing(true)
+        .separator("_")
+        .list_separator(",")
+        .with_list_parse_key("github.repos");
+
+    let config = config::Config::builder()
+        .set_default("database", "opsql.db")?
+        .set_default("github.per_page", "100")?
+        .set_default::<&str, Vec<String>>("github.repos", vec![])?
+        .add_source(config::File::with_name(config_path))
+        .add_source(env_source)
+        .build()?;
+
+    let _ = CONFIG.set(RwLock::new(config));
+
+    Ok(())
 }

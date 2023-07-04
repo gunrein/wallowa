@@ -1,4 +1,4 @@
-use crate::{db::Pool, get_config};
+use crate::{config_value, db::Pool};
 use anyhow::{bail, Result};
 use chrono::{DateTime, LocalResult, NaiveDateTime, TimeZone, Utc};
 use duckdb::params;
@@ -223,9 +223,9 @@ struct GithubRequest {
 }
 
 async fn make_requests(pool: &Pool, requests: &[GithubRequest]) -> Result<Vec<ResponseInfo>> {
-    let github_api_token: String = get_config("GITHUB_AUTH_TOKEN")
+    let github_api_token: String = config_value("github.auth.token")
         .await
-        .expect("Missing WALLOWA_GITHUB_AUTH_TOKEN env var");
+        .expect("Missing WALLOWA_GITHUB_AUTH_TOKEN environment variable");
 
     let mut headers = HeaderMap::new();
     let mut header_value = HeaderValue::from_str(format!("Bearer {}", github_api_token).as_str())?;
@@ -268,11 +268,11 @@ async fn make_requests(pool: &Pool, requests: &[GithubRequest]) -> Result<Vec<Re
             let mut inner_responses: Vec<ResponseInfo> = vec![];
             let base_url = url;
             let mut parsed_url = &mut Url::parse(base_url)?;
+            let per_page: String = config_value("github.per_page").await.expect("Config error for `github.per_page`");
             parsed_url = parsed_url
                 .query_pairs_mut()
                 .append_pair("since", &old_watermark.to_rfc3339())
-                // TODO make the per_page value configurable
-                .append_pair("per_page", "100")
+                .append_pair("per_page", per_page.as_str())
                 .finish();
             let mut url_opt = Some(String::from(parsed_url.as_str()));
 
