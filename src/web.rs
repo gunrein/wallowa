@@ -15,9 +15,8 @@ use tower_http::trace::TraceLayer;
 use tracing::{debug, info};
 
 use crate::{
-    config_value,
     db::Pool,
-    sources::github::{fetch_pulls, latest_fetch, request_pulls},
+    sources::{fetch_given_source, github::latest_fetch},
 };
 
 pub async fn sources(State(state): State<Arc<AppState>>) -> Result<Html<String>, AppError> {
@@ -55,15 +54,7 @@ pub async fn fetch_source(
     State(state): State<Arc<AppState>>,
     Path(source_id): Path<crate::sources::Source>,
 ) -> Result<Html<String>, AppError> {
-    let timestamp = match source_id {
-        crate::sources::Source::Github => {
-            let repos: Vec<String> = config_value("github.repos")
-                .await
-                .expect("Unable to get config for `github.repos`");
-            let responses = request_pulls(&state.pool, &repos).await?;
-            fetch_pulls(&state.pool, &responses)?
-        }
-    };
+    let timestamp = fetch_given_source(&state.pool, &source_id).await?;
 
     Ok(Html(render(
         state,
