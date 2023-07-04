@@ -247,7 +247,7 @@ VALUES
 
     // Test the first 31 days of the table
     let results = merged_pr_duration_30_day_rolling_avg_hours(
-        pool,
+        &pool,
         "fakeowner",
         "FakeRepo",
         Utc.with_ymd_and_hms(2020, 02, 05, 0, 0, 0).unwrap(),

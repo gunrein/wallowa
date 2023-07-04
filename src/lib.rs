@@ -44,3 +44,21 @@ pub fn init_config(config_path: &str) -> Result<()> {
 
     Ok(())
 }
+
+// Adapted from https://github.com/tokio-rs/axum/blob/c97967252de9741b602f400dc2b25c8a33216039/examples/anyhow-error-response/src/main.rs under MIT license
+// Make our own error that wraps `anyhow::Error`.
+#[derive(Debug)]
+pub struct AppError(anyhow::Error);
+
+/// This enables using `?` on functions that return `Result<_, anyhow::Error>` to turn them into
+/// `Result<_, AppError>`. That way you don't need to do that manually.
+impl<E> From<E> for AppError
+where
+    E: Into<anyhow::Error>,
+{
+    fn from(err: E) -> Self {
+        Self(err.into())
+    }
+}
+
+pub type AppResult<T> = anyhow::Result<T, AppError>;

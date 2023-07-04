@@ -12,7 +12,7 @@ pub struct CountByRepo {
 }
 
 /// Count the number of commits by repo
-/// TODO fix to query directly against raw data since the `github_commit` table no longer exists
+/// TODO fix to query directly against raw data since the `github_commit` table no longer exists (BE CAREFUL TO FILTER DUPLICATES!)
 pub fn count_commits(pool: Pool) -> Result<Vec<CountByRepo>> {
     debug!("Running `count_commits`");
 
@@ -39,7 +39,7 @@ ORDER BY "owner", repo;
 }
 
 /// Count the number of pulls by repo
-/// TODO fix to query directly against raw data since the `github_commit` table no longer exists
+/// TODO fix to query directly against raw data since the `github_pull` table no longer exists (BE CAREFUL TO FILTER DUPLICATES!)
 pub fn count_pulls(pool: Pool) -> Result<Vec<CountByRepo>> {
     debug!("Running `count_pulls`");
 
@@ -72,7 +72,7 @@ pub struct DurationByDay {
 }
 
 pub fn merged_pr_duration_30_day_rolling_avg_hours(
-    pool: Pool,
+    pool: &Pool,
     owner: &str,
     repo: &str,
     end_date: DateTime<Utc>,
@@ -83,28 +83,58 @@ pub fn merged_pr_duration_30_day_rolling_avg_hours(
 
     let mut stmt = conn.prepare(
         r#"
+-- merged_pr_duration_30_day_rolling_avg_hours
+-- Duration of merged GitHub Pull Requests, rolling 30 day average in hours
 WITH calendar_day AS (
     -- Generate a series of days so that each day has a rolling average represented
     SELECT CAST(unnest(generate_series(CAST(? AS DATE) - interval 30 day, CAST(? AS DATE), interval '1' day)) AS DATE) as "day"
 ),
+pulls AS (
+    SELECT
+        id,
+        "data_source",
+        unnest(json_transform_strict("data",
+            '[{
+                "base": {
+                    "repo": {
+                        "name": "VARCHAR",
+                        "owner": {
+                            "login": "VARCHAR"
+                        }
+                    }
+                },
+                "state": "VARCHAR",
+                "created_at": "TIMESTAMP",
+                "closed_at": "TIMESTAMP",
+                "merged_at": "TIMESTAMP",
+                "draft": "BOOLEAN"
+            }]')) AS row,
+    FROM wallowa_raw_data
+    WHERE "data_source" = 'github_rest_api'
+    AND data_type = 'pulls'
+),
 rolling AS (
-    SELECT "owner", repo, CAST(created_at AS DATE) AS created_date, CAST(merged_at AS DATE) AS merged_date,
-    AVG(EPOCH(AGE(merged_at, created_at)) / 86400) OVER thirty AS "PR duration in days, 30-day moving average"
-    FROM github_pull
-    WHERE "owner" = ?
-    AND repo = ?
-    AND merged_at NOT NULL
+    SELECT
+        row.base.repo.owner.login AS "owner",
+        row.base.repo.name AS repo,
+        CAST(row.created_at AS DATE) AS created_date,
+        CAST(row.merged_at AS DATE) AS merged_date,
+        AVG(EPOCH(AGE(row.merged_at, row.created_at)) / 86400) OVER thirty AS duration
+    FROM pulls
+    WHERE row.base.repo.owner.login = ?
+    AND row.base.repo.name = ?
+    AND row.merged_at NOT NULL
     WINDOW thirty AS (
-        PARTITION BY owner, repo
-        ORDER BY created_at ASC
+        PARTITION BY "owner", repo
+        ORDER BY row.created_at ASC
         RANGE BETWEEN INTERVAL 30 DAYS PRECEDING
                 AND INTERVAL 0 DAYS FOLLOWING)
 )
-SELECT calendar_day."day", AVG(rolling."PR duration in days, 30-day moving average")
+SELECT calendar_day."day", AVG(rolling.duration)
 FROM calendar_day
 ASOF LEFT JOIN rolling ON calendar_day."day" >= rolling.merged_date
 GROUP BY 1
-ORDER BY 1;
+ORDER BY 1
 "#)?;
 
     Ok(stmt

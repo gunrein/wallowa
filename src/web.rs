@@ -1,11 +1,11 @@
-use anyhow::Result;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
     routing::{get, post},
-    Router,
+    Json, Router,
 };
+use chrono::{TimeZone, Utc};
 use minijinja::{context, Environment, Source};
 use minijinja_autoreload::AutoReloader;
 use std::{net::SocketAddr, sync::Arc};
@@ -16,10 +16,26 @@ use tracing::{debug, info};
 
 use crate::{
     db::Pool,
+    queries::github::{merged_pr_duration_30_day_rolling_avg_hours, DurationByDay},
     sources::{fetch_given_source, github::latest_fetch},
+    AppError, AppResult,
 };
 
-pub async fn sources(State(state): State<Arc<AppState>>) -> Result<Html<String>, AppError> {
+pub async fn handler_merged_pr_duration_30_day_rolling_avg_hours(
+    State(state): State<Arc<AppState>>,
+    Path((owner, repo)): Path<(String, String)>,
+) -> AppResult<Json<Vec<DurationByDay>>> {
+    let end_date = Utc.with_ymd_and_hms(2023, 6, 1, 0, 0, 0).unwrap();
+    let results = merged_pr_duration_30_day_rolling_avg_hours(
+        &state.pool,
+        owner.as_str(),
+        repo.as_str(),
+        end_date,
+    )?;
+    Ok(Json(results))
+}
+
+pub async fn sources(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
     let github_last_fetched = latest_fetch(&state.pool)?
         .format("%Y-%m-%dT%H:%M:%SZ")
         .to_string();
@@ -34,7 +50,7 @@ pub async fn sources(State(state): State<Arc<AppState>>) -> Result<Html<String>,
     )?))
 }
 
-pub async fn dashboard(State(state): State<Arc<AppState>>) -> Result<Html<String>, AppError> {
+pub async fn dashboard(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
     Ok(Html(render(
         state,
         "dashboard.html",
@@ -42,7 +58,7 @@ pub async fn dashboard(State(state): State<Arc<AppState>>) -> Result<Html<String
     )?))
 }
 
-pub async fn bookmark(State(state): State<Arc<AppState>>) -> Result<Html<String>, AppError> {
+pub async fn bookmark(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
     Ok(Html(render(
         state,
         "bookmark.html",
@@ -53,7 +69,7 @@ pub async fn bookmark(State(state): State<Arc<AppState>>) -> Result<Html<String>
 pub async fn fetch_source(
     State(state): State<Arc<AppState>>,
     Path(source_id): Path<crate::sources::Source>,
-) -> Result<Html<String>, AppError> {
+) -> AppResult<Html<String>> {
     let timestamp = fetch_given_source(&state.pool, &source_id).await?;
 
     Ok(Html(render(
@@ -66,7 +82,7 @@ pub async fn fetch_source(
     )?))
 }
 
-pub async fn serve(host: &str, port: &str, pool: Pool) -> Result<()> {
+pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
     let reloader = AutoReloader::new(|notifier| {
         let mut env = Environment::new();
         // TODO embed templates
@@ -87,6 +103,10 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> Result<()> {
         .precompressed_gzip();
 
     let app = Router::new()
+        .route(
+            "/query/merged_pr_duration_30_day_rolling_avg_hours/:owner/:repo",
+            get(handler_merged_pr_duration_30_day_rolling_avg_hours),
+        )
         .route("/sources/:source_id/fetch", post(fetch_source))
         .route("/sources", get(sources))
         .route("/dashboard", get(dashboard))
@@ -152,11 +172,7 @@ pub struct AppState {
     pool: Pool,
 }
 
-// Adapted from https://github.com/tokio-rs/axum/blob/c97967252de9741b602f400dc2b25c8a33216039/examples/anyhow-error-response/src/main.rs under MIT license
-// Make our own error that wraps `anyhow::Error`.
-pub struct AppError(anyhow::Error);
-
-// Tell axum how to convert `AppError` into a response.
+/// Tell axum how to convert `AppError` into a response.
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         (
@@ -166,16 +182,3 @@ impl IntoResponse for AppError {
             .into_response()
     }
 }
-
-// This enables using `?` on functions that return `Result<_, anyhow::Error>` to turn them into
-// `Result<_, AppError>`. That way you don't need to do that manually.
-impl<E> From<E> for AppError
-where
-    E: Into<anyhow::Error>,
-{
-    fn from(err: E) -> Self {
-        Self(err.into())
-    }
-}
-
-type AppResult<T> = anyhow::Result<T, AppError>;

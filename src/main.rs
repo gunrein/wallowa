@@ -1,11 +1,10 @@
-use anyhow::Result;
 use dotenvy::dotenv;
 use opsql::db::open_db_pool;
 use opsql::web::serve;
-use opsql::{config_value, init_config};
+use opsql::{config_value, init_config, AppResult};
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> AppResult<()> {
     dotenv().ok();
 
     tracing_subscriber::fmt::init();
