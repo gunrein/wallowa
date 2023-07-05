@@ -1,20 +1,36 @@
 {
   "name": "opsql",
   "version": "0.1.0",
+  "type": "module",
   "description": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev:css": "npx tailwindcss -i styles.css -o ./static/styles.css --watch",
+    "dev:static": "node ./copy-static.js",
+    "dev:css": "npx tailwindcss -i ./src-web/app.css -o ./dist/app.css --watch",
+    "dev:esbuild": "node ./esbuild.watch.mjs",
     "dev:backend": "RUST_LOG=debug RUST_BACKTRACE=1 cargo run",
-    "dev": "npm-run-all --parallel dev:*",
-    "build:css": "npx tailwindcss -i styles.css -o ./static/styles.css",
+    "dev": "rm -rf ./dist && npm-run-all --parallel dev:*",
+    "build:ts": "tsc -p tsconfig.json",
+    "build:css": "npx tailwindcss -i ./src-web/app.css -o ./dist/app.css --minify",
+    "build:esbuild": "node ./esbuild.config.mjs",
+    "build:static": "node ./copy-static.js",
+    "build:compress": "node ./compress.js",
     "build:backend": "cargo build --release",
-    "build": "npm-run-all --sequential build:*",
-    "preview": "cargo run --release"
+    "build": "npm-run-all --sequential clean build:ts build:css build:esbuild build:static build:compress build:backend",
+    "preview": "cargo run --release",
+    "clean": "rm -rf ./dist"
   },
   "devDependencies": {
+    "@types/alpinejs": "^3.7.2",
     "daisyui": "^3.1.6",
+    "esbuild": "^0.18.11",
+    "glob": "^10.3.1",
     "npm-run-all": "^4.1.5",
-    "tailwindcss": "^3.3.2"
+    "tailwindcss": "^3.3.2",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "alpinejs": "^3.12.3",
+    "htmx.org": "^1.9.2"
   }
 }

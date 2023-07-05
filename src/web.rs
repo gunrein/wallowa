@@ -98,7 +98,7 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
     });
 
     // TODO embed static files
-    let static_dir = ServeDir::new("static")
+    let static_dir = ServeDir::new("dist")
         .precompressed_br()
         .precompressed_gzip();
 
