@@ -1,5 +1,5 @@
 {
-  "include": ["src-web"],
+  "include": ["src-web", "types"],
   "compilerOptions": {
     "outDir": "dist",
     "target": "ES2020",
@@ -21,9 +21,5 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
-  },
-  "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node",
   },
 }
