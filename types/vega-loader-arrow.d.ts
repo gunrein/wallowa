@@ -1,1 +1,0 @@
-declare module 'vega-loader-arrow';
