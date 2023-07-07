@@ -14,8 +14,7 @@ chrono = { version = "0.4", features = ["clock", "serde"], default-features = fa
 #clap = { version = "4", features = ["derive", "env", "unicode", "wrap_help"] }
 config = "0.13"
 dotenvy = "0.15"
-#duckdb = { version = "0.8", features = ["json", "chrono", "bundled", "r2d2", "serde_json", "extensions-full", "num"] }
-duckdb = { path = "../duckdb-rs", features = ["json", "chrono", "bundled", "r2d2", "serde_json", "extensions-full", "num"] }
+duckdb = { git = "https://github.com/gunrein/duckdb-rs.git", branch = "add-optional-arrow-ipc-feature", features = ["json", "chrono", "bundled", "r2d2", "serde_json", "extensions-full", "num", "arrow-ipc"] }
 futures = "0.3"
 inquire = "0.6"
 minijinja-autoreload = "0.34"
