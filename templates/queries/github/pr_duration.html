@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{%- import "icons.html" as icons -%}
+
+{% block title %}Merged GitHub Pull Request Duration{% endblock %}
+
+{% block content %}
+<div class="flow p-6">
+
+    <h1 class="text-lg py-2">Merged GitHub Pull Request Duration by Repo</h1>
+
+    <div id="vis"></div>
+</div>
+
+<script type="module" src="/static/pr_duration.js"></script>
+
+{% endblock %}

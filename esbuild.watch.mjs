@@ -1,7 +1,10 @@
-import * as esbuild from "esbuild";
+import * as esbuild from 'esbuild';
+import { glob } from 'glob';
+
+const entryPoints = await glob('./src-web/**/*.ts');
 
 let ctx = await esbuild.context({
-  entryPoints: ["src-web/main.ts"],
+  entryPoints: entryPoints,
   minify: false,
   bundle: true,
   sourcemap: true,
