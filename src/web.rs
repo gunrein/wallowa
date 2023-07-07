@@ -11,11 +11,12 @@ use minijinja::{context, Environment, Source};
 use minijinja_autoreload::AutoReloader;
 use std::{io::BufWriter, net::SocketAddr, sync::Arc};
 use tokio::signal;
-use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
+use tower_http::{compression::CompressionLayer, services::ServeDir, CompressionLevel};
 use tracing::{debug, info};
 
 use crate::{
+    config_value,
     db::Pool,
     queries::github::merged_pr_duration_30_day_rolling_avg_hours,
     sources::{fetch_given_source, github::latest_fetch},
@@ -129,6 +130,36 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
         .precompressed_br()
         .precompressed_gzip();
 
+    let compression_level_cfg: String = config_value("server.response.compression.level")
+        .await
+        .expect("Config error for `server.response.compression.level`");
+    let compression_level = match compression_level_cfg.to_ascii_lowercase().as_str() {
+        "default" => CompressionLevel::Default,
+        "best" => CompressionLevel::Best,
+        "fastest" => CompressionLevel::Fastest,
+        _ => CompressionLevel::Fastest,
+    };
+    let compression_layer = CompressionLayer::new()
+        .br(config_value("server.response.compression.br")
+            .await
+            .expect("Config error for `server.response.compression.br`"))
+        .gzip(
+            config_value("server.response.compression.gzip")
+                .await
+                .expect("Config error for `server.response.compression.gzip`"),
+        )
+        .zstd(
+            config_value("server.response.compression.zstd")
+                .await
+                .expect("Config error for `server.response.compression.zstd`"),
+        )
+        .deflate(
+            config_value("server.response.compression.deflate")
+                .await
+                .expect("Config error for `server.response.compression.deflate`"),
+        )
+        .quality(compression_level);
+
     let app = Router::new()
         .route(
             "/query/merged_pr_duration_30_day_rolling_avg_hours.arrow",
@@ -139,8 +170,10 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
         .route("/sources", get(sources))
         .route("/dashboard", get(dashboard))
         .route("/bookmark", get(bookmark))
+        // The compression layer comes before the `/static` since `/static` is pre-compressed
+        // by the build process (for release builds)
+        .layer(compression_layer)
         .nest_service("/static", static_dir)
-        .route("/", get(|| async { "Hello, World!" }))
         .with_state(state)
         .layer(TraceLayer::new_for_http());
 
