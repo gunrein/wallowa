@@ -1,8 +1,7 @@
 use crate::db::Pool;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use duckdb::params;
-use serde::Serialize;
+use duckdb::{arrow::record_batch::RecordBatch, params};
 use tracing::debug;
 
 pub struct CountByRepo {
@@ -65,18 +64,10 @@ ORDER BY "owner", repo;
         .collect::<Result<Vec<CountByRepo>, duckdb::Error>>()?)
 }
 
-#[derive(Serialize)]
-pub struct DurationByDay {
-    pub date: DateTime<Utc>,
-    pub duration: Option<f64>,
-}
-
 pub fn merged_pr_duration_30_day_rolling_avg_hours(
     pool: &Pool,
-    owner: &str,
-    repo: &str,
     end_date: DateTime<Utc>,
-) -> Result<Vec<DurationByDay>> {
+) -> Result<Vec<RecordBatch>> {
     debug!("Running `avg_merged_pr_duration`");
 
     let conn = pool.get()?;
@@ -121,28 +112,20 @@ rolling AS (
         CAST(row.merged_at AS DATE) AS merged_date,
         AVG(EPOCH(AGE(row.merged_at, row.created_at)) / 86400) OVER thirty AS duration
     FROM pulls
-    WHERE row.base.repo.owner.login = ?
-    AND row.base.repo.name = ?
-    AND row.merged_at NOT NULL
+    WHERE row.merged_at NOT NULL
     WINDOW thirty AS (
         PARTITION BY "owner", repo
         ORDER BY row.created_at ASC
         RANGE BETWEEN INTERVAL 30 DAYS PRECEDING
                 AND INTERVAL 0 DAYS FOLLOWING)
 )
-SELECT calendar_day."day", AVG(rolling.duration)
+SELECT calendar_day."day" AS "day", ("owner" || '/' || repo) AS repo, AVG(rolling.duration) AS "duration"
 FROM calendar_day
 ASOF LEFT JOIN rolling ON calendar_day."day" >= rolling.merged_date
-GROUP BY 1
-ORDER BY 1
+GROUP BY 1,2
+ORDER BY 1,2
 "#)?;
 
-    Ok(stmt
-        .query_map(params![end_date, end_date, owner, repo], |row| {
-            Ok(DurationByDay {
-                date: row.get(0)?,
-                duration: row.get(1)?,
-            })
-        })?
-        .collect::<Result<Vec<DurationByDay>, duckdb::Error>>()?)
+    let r: Vec<RecordBatch> = stmt.query_arrow(params![end_date, end_date])?.collect();
+    Ok(r)
 }

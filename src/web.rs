@@ -3,12 +3,13 @@ use axum::{
     http::StatusCode,
     response::{Html, IntoResponse, Response},
     routing::{get, post},
-    Json, Router,
+    Router,
 };
 use chrono::{TimeZone, Utc};
+use duckdb::arrow::{datatypes::Schema, ipc::writer::FileWriter};
 use minijinja::{context, Environment, Source};
 use minijinja_autoreload::AutoReloader;
-use std::{net::SocketAddr, sync::Arc};
+use std::{io::BufWriter, net::SocketAddr, sync::Arc};
 use tokio::signal;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
@@ -16,23 +17,49 @@ use tracing::{debug, info};
 
 use crate::{
     db::Pool,
-    queries::github::{merged_pr_duration_30_day_rolling_avg_hours, DurationByDay},
+    queries::github::merged_pr_duration_30_day_rolling_avg_hours,
     sources::{fetch_given_source, github::latest_fetch},
     AppError, AppResult,
 };
 
 pub async fn handler_merged_pr_duration_30_day_rolling_avg_hours(
     State(state): State<Arc<AppState>>,
-    Path((owner, repo)): Path<(String, String)>,
-) -> AppResult<Json<Vec<DurationByDay>>> {
-    let end_date = Utc.with_ymd_and_hms(2023, 6, 1, 0, 0, 0).unwrap();
-    let results = merged_pr_duration_30_day_rolling_avg_hours(
-        &state.pool,
-        owner.as_str(),
-        repo.as_str(),
-        end_date,
+) -> AppResult<Vec<u8>> {
+    let end_date = Utc.with_ymd_and_hms(2023, 6, 16, 0, 0, 0).unwrap();
+    let results = merged_pr_duration_30_day_rolling_avg_hours(&state.pool, end_date)?;
+
+    let mut ipc_data: Vec<u8> = Vec::new();
+    if !results.is_empty() {
+        // Use the schema from the first RecordBatch as the IPC schema
+        let schema = results[0].schema();
+        let metadata = schema.metadata.clone();
+        let fields: Vec<Arc<duckdb::arrow::datatypes::Field>> = schema
+            .all_fields()
+            .iter()
+            .map(|field| Arc::new((*field).clone()))
+            .collect();
+        let ipc_schema = Schema::new_with_metadata(fields, metadata);
+
+        let buf = BufWriter::new(&mut ipc_data);
+        let mut writer = FileWriter::try_new(buf, &ipc_schema)?;
+        for batch in results {
+            writer.write(&batch)?;
+        }
+        writer.finish()?;
+    }
+
+    Ok(ipc_data)
+}
+
+pub async fn github_pr_duration(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
+    let html = render(
+        state,
+        "queries/github/pr_duration.html",
+        context! {
+            current_nav => "github/pr_duration",
+        },
     )?;
-    Ok(Json(results))
+    Ok(Html(html))
 }
 
 pub async fn sources(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
@@ -104,9 +131,10 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
 
     let app = Router::new()
         .route(
-            "/query/merged_pr_duration_30_day_rolling_avg_hours/:owner/:repo",
+            "/query/merged_pr_duration_30_day_rolling_avg_hours.arrow",
             get(handler_merged_pr_duration_30_day_rolling_avg_hours),
         )
+        .route("/query/github/pr_duration", get(github_pr_duration))
         .route("/sources/:source_id/fetch", post(fetch_source))
         .route("/sources", get(sources))
         .route("/dashboard", get(dashboard))
