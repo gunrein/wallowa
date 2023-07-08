@@ -1,7 +1,8 @@
 use crate::db::Pool;
 use anyhow::Result;
+use arrow::record_batch::RecordBatch;
 use chrono::{DateTime, Utc};
-use duckdb::{arrow::record_batch::RecordBatch, params};
+use duckdb::params;
 use tracing::debug;
 
 pub struct CountByRepo {
@@ -126,6 +127,5 @@ GROUP BY 1,2
 ORDER BY 1,2
 "#)?;
 
-    let r: Vec<RecordBatch> = stmt.query_arrow(params![end_date, end_date])?.collect();
-    Ok(r)
+    Ok(stmt.query_arrow(params![end_date, end_date])?.collect::<Vec<RecordBatch>>())
 }
