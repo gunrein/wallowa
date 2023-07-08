@@ -127,5 +127,7 @@ GROUP BY 1,2
 ORDER BY 1,2
 "#)?;
 
-    Ok(stmt.query_arrow(params![end_date, end_date])?.collect::<Vec<RecordBatch>>())
+    Ok(stmt
+        .query_arrow(params![end_date, end_date])?
+        .collect::<Vec<RecordBatch>>())
 }
