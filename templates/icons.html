@@ -1,16 +1,34 @@
 {# Icons are from https://heroicons.com/ under an MIT license #}
-{%- macro icon_wrapper(classes="") -%}
+{%- macro icon_wrapper() -%}
 <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 {{ classes }}">
     {{ caller() }}
 </svg>
 {%- endmacro -%}
 
 {%- macro menu_icon() -%}
-{%- call icon_wrapper(classes="swap-off fill-current") -%}<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />{%- endcall -%}
+<svg
+  fill="none"
+  viewBox="0 0 24 24"
+  stroke-width="1.5"
+  stroke="currentColor"
+  class="w-6 h-6 swap-off fill-current"
+  :class="menuOpen ? 'swap-off' : 'swap-active'"
+>
+  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+</svg>
 {%- endmacro -%}
 
 {%- macro x_icon() -%}
-{%- call icon_wrapper(classes="swap-on fill-current") -%}<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />{%- endcall -%}
+<svg
+  fill="none"
+  viewBox="0 0 24 24"
+  stroke-width="1.5"
+  stroke="currentColor"
+  class="w-6 h-6 fill-current"
+  :class="menuOpen ? 'swap-active' : 'swap-off'"
+>
+  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+</svg>
 {%- endmacro -%}
 
 {%- macro dashboard_icon() -%}
