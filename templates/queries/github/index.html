@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{%- import "icons.html" as icons -%}
+
+{% block title %}GitHub dashboards{% endblock %}
+
+{% block content %}
+<div class="flex-row p-6">
+
+  <h1 class="text-lg py-2">{{ github_icon() }} GitHub dashboards</h1>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th class="hidden sm:table-cell"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <a class="link" href="/query/github/pr_duration">Pull Request duration</a>
+        </td>
+        <td class="hidden sm:table-cell">
+          The rolling daily average of the number of days elapsed between creating a PR and merging a PR.
+          Doesn't include unmerged PRs in the average.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+{% endblock %}

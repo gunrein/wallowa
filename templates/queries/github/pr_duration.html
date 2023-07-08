@@ -1,14 +1,19 @@
 {% extends "base.html" %}
 {%- import "icons.html" as icons -%}
 
-{% block title %}Merged GitHub Pull Request Duration{% endblock %}
+{% block title %}Merged GitHub Pull Request duration{% endblock %}
 
 {% block content %}
-<div class="flow p-6">
+<div class="flex-row p-6">
 
-    <h1 class="text-lg py-2">Merged GitHub Pull Request Duration by Repo</h1>
+    <h1 class="text-lg py-2">Merged GitHub Pull Request duration by Repo</h1>
 
-    <div id="vis"></div>
+    <p class="text-sm py-2">
+        The rolling daily average of the number of days elapsed between creating a PR and merging a PR.
+        Doesn't include unmerged PRs in the average.
+    </p>
+
+    <div class="py-6" id="vis"></div>
 </div>
 
 <script type="module" src="/static/pr_duration.js"></script>

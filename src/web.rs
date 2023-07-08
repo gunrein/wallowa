@@ -57,7 +57,18 @@ pub async fn github_pr_duration(State(state): State<Arc<AppState>>) -> AppResult
         state,
         "queries/github/pr_duration.html",
         context! {
-            current_nav => "github/pr_duration",
+            current_nav => "/query/github/pr_duration",
+        },
+    )?;
+    Ok(Html(html))
+}
+
+pub async fn github_dashboard(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
+    let html = render(
+        state,
+        "queries/github/index.html",
+        context! {
+            current_nav => "/query/github",
         },
     )?;
     Ok(Html(html))
@@ -72,7 +83,7 @@ pub async fn sources(State(state): State<Arc<AppState>>) -> AppResult<Html<Strin
         state,
         "sources/index.html",
         context! {
-            current_nav => "sources",
+            current_nav => "/sources",
             github_last_fetched,
         },
     )?))
@@ -82,7 +93,7 @@ pub async fn dashboard(State(state): State<Arc<AppState>>) -> AppResult<Html<Str
     Ok(Html(render(
         state,
         "dashboard.html",
-        context! { current_nav => "dashboard" },
+        context! { current_nav => "/dashboard" },
     )?))
 }
 
@@ -90,7 +101,7 @@ pub async fn bookmark(State(state): State<Arc<AppState>>) -> AppResult<Html<Stri
     Ok(Html(render(
         state,
         "bookmark.html",
-        context! { current_nav => "bookmark" },
+        context! { current_nav => "/bookmark" },
     )?))
 }
 
@@ -166,6 +177,7 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
             get(handler_merged_pr_duration_30_day_rolling_avg_hours),
         )
         .route("/query/github/pr_duration", get(github_pr_duration))
+        .route("/query/github", get(github_dashboard))
         .route("/sources/:source_id/fetch", post(fetch_source))
         .route("/sources", get(sources))
         .route("/dashboard", get(dashboard))
