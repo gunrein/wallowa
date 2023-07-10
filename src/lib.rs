@@ -5,8 +5,7 @@ use config::Config;
 use tokio::sync::RwLock;
 
 pub mod db;
-pub mod queries;
-pub mod sources;
+pub mod github;
 pub mod web;
 
 /// Global static reference to a RwLock'd configuration initialized in `main`

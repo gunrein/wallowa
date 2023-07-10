@@ -5,8 +5,8 @@ use duckdb::arrow::{
 };
 use opsql::{
     db::open_db_pool,
-    queries::github::merged_pr_duration_30_day_rolling_avg_hours,
-    sources::github::{fetch_commits, fetch_pulls, ResponseInfo},
+    github::fetch::{fetch_commits, fetch_pulls, ResponseInfo},
+    github::queries::merged_pr_duration_30_day_rolling_avg_hours,
 };
 use std::{fs, path::Path};
 

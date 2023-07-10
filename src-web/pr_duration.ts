@@ -2,7 +2,7 @@ import * as Plot from "@observablehq/plot";
 import { tableFromIPC } from "@apache-arrow/ts";
 
 async function doPlot() {
-    const data = await tableFromIPC(fetch("/query/merged_pr_duration_30_day_rolling_avg_hours.arrow"));
+    const data = await tableFromIPC(fetch("/data/github/merged_pr_duration_30_day_rolling_avg_hours.arrow"));
     const plot = Plot.plot({
         style: "overflow: visible;",
         y: {grid: true},

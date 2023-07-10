@@ -9,6 +9,15 @@ use reqwest::{
 };
 use tracing::{debug, error, info};
 
+/// Fetch the latest data from Github
+pub async fn fetch_all(pool: &Pool) -> Result<NaiveDateTime> {
+    let repos: Vec<String> = config_value("github.repos")
+        .await
+        .expect("Unable to get config for `github.repos`");
+    let responses = request_pulls(pool, &repos).await?;
+    fetch_pulls(pool, &responses)
+}
+
 /// Return the timestamp of the most recent API request
 pub fn latest_fetch(pool: &Pool) -> Result<NaiveDateTime> {
     let conn = pool.get()?;
