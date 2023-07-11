@@ -74,9 +74,7 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
         .precompressed_br()
         .precompressed_gzip();
 
-    let compression_level_cfg: String = config_value("server.response.compression.level")
-        .await
-        .expect("Config error for `server.response.compression.level`");
+    let compression_level_cfg: String = config_value("server.response.compression.level").await?;
     let compression_level = match compression_level_cfg.to_ascii_lowercase().as_str() {
         "default" => CompressionLevel::Default,
         "best" => CompressionLevel::Best,
@@ -84,24 +82,10 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
         _ => CompressionLevel::Fastest,
     };
     let compression_layer = CompressionLayer::new()
-        .br(config_value("server.response.compression.br")
-            .await
-            .expect("Config error for `server.response.compression.br`"))
-        .gzip(
-            config_value("server.response.compression.gzip")
-                .await
-                .expect("Config error for `server.response.compression.gzip`"),
-        )
-        .zstd(
-            config_value("server.response.compression.zstd")
-                .await
-                .expect("Config error for `server.response.compression.zstd`"),
-        )
-        .deflate(
-            config_value("server.response.compression.deflate")
-                .await
-                .expect("Config error for `server.response.compression.deflate`"),
-        )
+        .br(config_value("server.response.compression.br").await?)
+        .gzip(config_value("server.response.compression.gzip").await?)
+        .zstd(config_value("server.response.compression.zstd").await?)
+        .deflate(config_value("server.response.compression.deflate").await?)
         .quality(compression_level);
 
     let app = Router::new()

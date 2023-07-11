@@ -11,9 +11,7 @@ use tracing::{debug, error, info};
 
 /// Fetch the latest data from Github
 pub async fn fetch_all(pool: &Pool) -> Result<NaiveDateTime> {
-    let repos: Vec<String> = config_value("github.repos")
-        .await
-        .expect("Unable to get config for `github.repos`");
+    let repos: Vec<String> = config_value("github.repos").await?;
     let responses = request_pulls(pool, &repos).await?;
     fetch_pulls(pool, &responses)
 }
@@ -232,9 +230,7 @@ struct GithubRequest {
 }
 
 async fn make_requests(pool: &Pool, requests: &[GithubRequest]) -> Result<Vec<ResponseInfo>> {
-    let github_api_token: String = config_value("github.auth.token")
-        .await
-        .expect("Missing WALLOWA_GITHUB_AUTH_TOKEN environment variable");
+    let github_api_token: String = config_value("github.auth.token").await?;
 
     let mut headers = HeaderMap::new();
     let mut header_value = HeaderValue::from_str(format!("Bearer {}", github_api_token).as_str())?;
@@ -277,7 +273,7 @@ async fn make_requests(pool: &Pool, requests: &[GithubRequest]) -> Result<Vec<Re
             let mut inner_responses: Vec<ResponseInfo> = vec![];
             let base_url = url;
             let mut parsed_url = &mut Url::parse(base_url)?;
-            let per_page: String = config_value("github.per_page").await.expect("Config error for `github.per_page`");
+            let per_page: String = config_value("github.per_page").await?;
             parsed_url = parsed_url
                 .query_pairs_mut()
                 .append_pair("since", &old_watermark.to_rfc3339())

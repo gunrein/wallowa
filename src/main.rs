@@ -27,17 +27,11 @@ async fn main() -> AppResult<()> {
             println!("TODO - implement `init`");
         }
         Some(Commands::Serve {}) => {
-            let database_string: String = config_value("database")
-                .await
-                .expect("Unable to get config for `database`");
+            let database_string: String = config_value("database").await?;
             let pool = open_db_pool(database_string.as_str(), 1)?;
 
-            let host: String = config_value("server.host")
-                .await
-                .expect("Unable to get config value for `server.host`");
-            let port: String = config_value("server.port")
-                .await
-                .expect("Unable to get config value for `server.port`");
+            let host: String = config_value("server.host").await?;
+            let port: String = config_value("server.port").await?;
 
             serve(&host, &port, pool).await?;
         }
