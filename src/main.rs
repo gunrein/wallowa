@@ -4,6 +4,7 @@ use opsql::cli::{Cli, Commands};
 use opsql::db::open_db_pool;
 use opsql::web::serve;
 use opsql::{config_value, init_config, AppResult};
+use tracing::info;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
@@ -21,7 +22,14 @@ async fn main() -> AppResult<()> {
 
     match cli.command {
         Some(Commands::Fetch {}) => {
-            println!("TODO - implement `fetch`");
+            // Fetches from all sources
+            // Each source is expected to run *only* if it is configured
+            let database_string: String = config_value("database").await?;
+            let pool = open_db_pool(database_string.as_str(), 1)?;
+
+            info!("Fetching from:");
+            info!("    GitHub...");
+            opsql::github::fetch::fetch_all(&pool).await?;
         }
         Some(Commands::Init {}) => {
             println!("TODO - implement `init`");

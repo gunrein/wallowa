@@ -10,6 +10,7 @@
     "dev:esbuild": "node ./esbuild.watch.mjs",
     "dev:backend": "RUST_LOG=debug RUST_BACKTRACE=1 cargo run serve",
     "dev": "rm -rf ./dist && npm-run-all --parallel dev:*",
+    "fetch": "RUST_LOG=debug RUST_BACKTRACE=1 cargo run fetch",
     "build:ts": "tsc -p tsconfig.json",
     "build:css": "npx tailwindcss -i ./src-web/app.css -o ./dist/app.css --minify",
     "build:esbuild": "node ./esbuild.config.mjs",
