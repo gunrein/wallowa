@@ -42,7 +42,7 @@ pub async fn dashboard(State(state): State<Arc<AppState>>) -> AppResult<Html<Str
     Ok(Html(render(
         state,
         "dashboard.html",
-        context! { current_nav => "/dashboard" },
+        context! { current_nav => "/" },
     )?))
 }
 
@@ -108,8 +108,8 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
         .nest("/github", page_routes())
         .nest("/data", Router::new().nest("/github", data_routes()))
         .route("/sources", get(sources))
-        .route("/dashboard", get(dashboard))
         .route("/bookmark", get(bookmark))
+        .route("/", get(dashboard))
         // The compression layer comes before the `/static` since `/static` is pre-compressed
         // by the build process (for release builds)
         .layer(compression_layer)
