@@ -4,6 +4,7 @@ use anyhow::Result;
 use config::Config;
 use tokio::sync::RwLock;
 
+pub mod cli;
 pub mod db;
 pub mod github;
 pub mod web;

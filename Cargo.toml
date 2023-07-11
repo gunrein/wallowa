@@ -12,7 +12,7 @@ anyhow = "1.0"
 arrow = { version = "41", default-features = false, features = ["ipc"] }
 axum = "0.6"
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
-#clap = { version = "4", features = ["derive", "env", "unicode", "wrap_help"] }
+clap = { version = "4", features = ["derive", "env", "unicode", "wrap_help"] }
 config = "0.13"
 dotenvy = "0.15"
 duckdb = { version = "0.8", features = ["json", "chrono", "bundled", "r2d2", "serde_json", "extensions-full", "num"] }
