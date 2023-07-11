@@ -36,6 +36,8 @@ pub fn init_config(config_path: &str) -> Result<()> {
         .set_default("database", "opsql.db")?
         .set_default("github.per_page", "100")?
         .set_default::<&str, Vec<String>>("github.repos", vec![])?
+        .set_default("server.host", "127.0.0.1")?
+        .set_default("server.port", "3825")?
         .set_default("server.response.compression.br", false)?
         .set_default("server.response.compression.gzip", true)?
         .set_default("server.response.compression.zstd", true)?
