@@ -69,3 +69,66 @@ where
 }
 
 pub type AppResult<T> = anyhow::Result<T, AppError>;
+
+pub const NEW_GITIGNORE: &str = r#"
+# Avoid committing sensitive environment variables to source control
+.env
+
+opsql.db.wal
+
+# Optionally ignore the database itself
+#opsql.db
+"#;
+
+pub const NEW_DOT_ENV: &str = r#"# Put your authentication keys in this file to avoid committing
+# them to source control.
+WALLOWA_GITHUB_AUTH_TOKEN='YOUR_TOKEN'
+"#;
+
+pub const NEW_CONFIG: &str = r#"# Config files are looked for at
+# `opsql.config.[toml | json | yaml | ini | ron | json5]` by default.
+# This file is in [TOML](https://github.com/toml-lang/toml) format.
+# You can specify a config file to use with the `opsql --config CONFIG`
+# argument or using the `OPSQL_CONFIG` environment variable
+# (`OPSQL_CONFIG=opsql.config.toml`, for example).
+
+# Add any GitHub repos that you'd like to track inside the `repos = []`
+# brackets. For example, "gunrein/opsql" is currently configured.
+# Default: [] (empty list)
+[github]
+repos = ["gunrein/opsql"]
+# The number of items to fetch per page. Default: 100
+#per_page = "100"
+
+# The database file to use. Default: opsql.db
+#database = "opsql.db"
+
+[server]
+# The network address to bind to. Default: 127.0.0.1
+#host = "127.0.0.1"
+# The network port to bind to. Default: 3825
+#port = "3825"
+
+[server.response.compression]
+# Compression level to use for HTTP server responses. Options are:
+# algo_default, best, fastest. Default: fastest
+# `algo_default` uses the default compression level for the given type.
+# See https://docs.rs/tower-http/0.4.1/tower_http/enum.CompressionLevel.html#variant.Default
+#level = "fastest"
+
+# Use brotli compression for HTTP server responses when requested by
+# the client. Default: false
+#br = false
+
+# Use gzip compression for HTTP server responses when requested by
+# the client. Default: true
+#gzip = true
+
+# Use zstd compression for HTTP server responses when requested by
+# the client. Default: true
+#zstd = true
+
+# Use deflate compression for HTTP server responses when requested by
+# the client. Default: true
+#deflate = true
+"#;

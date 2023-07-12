@@ -22,8 +22,11 @@ pub enum Commands {
     /// Fetch the latest data from configured sources
     Fetch {},
 
-    /// Initialize a new project
-    Init {},
+    /// Create a new project in an new directory
+    New {
+        /// The path of the new project directory
+        path: String,
+    },
 
     /// Serve the web app
     Serve {},
