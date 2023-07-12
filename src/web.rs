@@ -76,7 +76,7 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
 
     let compression_level_cfg: String = config_value("server.response.compression.level").await?;
     let compression_level = match compression_level_cfg.to_ascii_lowercase().as_str() {
-        "default" => CompressionLevel::Default,
+        "algo_default" => CompressionLevel::Default,
         "best" => CompressionLevel::Best,
         "fastest" => CompressionLevel::Fastest,
         _ => CompressionLevel::Fastest,
