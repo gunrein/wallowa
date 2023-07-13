@@ -76,7 +76,21 @@ async fn main() -> AppResult<()> {
             outfile.write_all(NEW_GITIGNORE.as_bytes()).await?;
             outfile.flush().await?;
 
-            info!("Created new project at `{path}`");
+            info!("A new project has been created at `{path}`");
+            info!("");
+            info!("To get started:");
+            info!("");
+            info!("  1. Add your GitHub repos to `opsql.config.toml`");
+            info!("  2. Add your GitHub access key to `.env`");
+            info!(
+                "  3. Fetch initial data: `opsql fetch` (this can take a while for active repos)"
+            );
+            info!("  4. Start the server: `opsql serve`");
+            info!("  5. Open your browser to https://localhost:3825/");
+            info!("");
+            info!("Check out the documentation at https://localhost:3825/docs/ or https://www.opsql.io/docs/");
+            info!("");
+            info!("Enjoy!");
         }
         Some(Commands::Serve {}) | None => {
             if let Some(cmd_line_cfg_file) = cli.config {
