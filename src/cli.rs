@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(author, version, about, long_about = None, arg_required_else_help = true)]
+#[command(author, version, about, long_about = None)]
 pub struct Cli {
     /// Set a custom config file
     #[arg(
@@ -14,13 +14,11 @@ pub struct Cli {
     pub config: Option<String>,
 
     /// Set the log format. Accepted values are:
-    ///
     /// - `terminal` - terminal-friendly human-readable basic log messages (the default)
     /// - `full` - richer human-readable log messages
     /// - `compact` - similar to `full`, but with less information
     /// - `pretty` - multi-line version of `full`
     /// - `json` - newline-delimited JSON logs
-    ///
     /// See https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/#formatters
     /// for more details.
     #[arg(
@@ -28,7 +26,8 @@ pub struct Cli {
         global = true,
         env = "WALLOWA_LOG_FORMAT",
         value_name = "LOG_FORMAT",
-        default_value = "terminal"
+        default_value = "terminal",
+        verbatim_doc_comment
     )]
     pub log_format: Option<String>,
 
