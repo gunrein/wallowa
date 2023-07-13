@@ -3,6 +3,10 @@ use std::sync::OnceLock;
 use anyhow::Result;
 use config::Config;
 use tokio::sync::RwLock;
+use tracing::metadata::LevelFilter;
+use tracing_subscriber::{
+    fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+};
 
 pub mod cli;
 pub mod db;
@@ -48,6 +52,61 @@ pub fn init_config(config_path: &str) -> Result<()> {
         .build()?;
 
     let _ = CONFIG.set(RwLock::new(config));
+
+    Ok(())
+}
+
+pub fn init_logging(log_format: &Option<String>) -> Result<()> {
+    let plain_format = fmt::format()
+        .with_level(false)
+        .with_target(false)
+        .with_thread_ids(false)
+        .with_thread_names(false)
+        .without_time()
+        .compact();
+
+    let env_filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::INFO.into())
+        .from_env_lossy();
+    if let Some(log_format_string) = log_format {
+        match log_format_string.as_str() {
+            "full" => {
+                tracing_subscriber::registry()
+                    .with(fmt::layer())
+                    .with(env_filter)
+                    .init();
+            }
+            "compact" => {
+                tracing_subscriber::registry()
+                    .with(fmt::layer().compact())
+                    .with(env_filter)
+                    .init();
+            }
+            "pretty" => {
+                tracing_subscriber::registry()
+                    .with(fmt::layer().pretty())
+                    .with(env_filter)
+                    .init();
+            }
+            "json" => {
+                tracing_subscriber::registry()
+                    .with(fmt::layer().json())
+                    .with(env_filter)
+                    .init();
+            }
+            _ => {
+                tracing_subscriber::registry()
+                    .with(fmt::layer().event_format(plain_format))
+                    .with(env_filter)
+                    .init();
+            }
+        }
+    } else {
+        tracing_subscriber::registry()
+            .with(fmt::layer().event_format(plain_format))
+            .with(env_filter)
+            .init();
+    }
 
     Ok(())
 }
