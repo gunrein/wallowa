@@ -78,7 +78,7 @@ async fn merged_pr_duration_30_day_rolling_avg_hours_arrow(
 async fn github_pr_duration(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
     let html = render(
         state,
-        "queries/github/pr_duration.html",
+        "github/pr_duration.html",
         context! {
             current_nav => "/github/pr_duration",
         },
@@ -89,7 +89,7 @@ async fn github_pr_duration(State(state): State<Arc<AppState>>) -> AppResult<Htm
 async fn github_dashboard(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
     let html = render(
         state,
-        "queries/github/index.html",
+        "github/index.html",
         context! {
             current_nav => "/github",
         },
