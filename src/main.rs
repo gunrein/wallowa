@@ -8,15 +8,68 @@ use opsql::web::serve;
 use opsql::{config_value, init_config, AppResult, NEW_CONFIG, NEW_DOT_ENV, NEW_GITIGNORE};
 use tokio::fs::{try_exists, DirBuilder, OpenOptions};
 use tokio::io::AsyncWriteExt;
+use tracing::metadata::LevelFilter;
 use tracing::{error, info};
+use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{fmt, EnvFilter};
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
     dotenv().ok();
 
-    tracing_subscriber::fmt::init();
-
     let cli = Cli::parse();
+
+    let plain_format = fmt::format()
+        .with_level(false)
+        .with_target(false)
+        .with_thread_ids(false)
+        .with_thread_names(false)
+        .without_time()
+        .compact();
+
+    let env_filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::INFO.into())
+        .from_env_lossy();
+    if let Some(log_format) = cli.log_format {
+        match log_format.as_str() {
+            "full" => {
+                tracing_subscriber::registry()
+                    .with(fmt::layer())
+                    .with(env_filter)
+                    .init();
+            }
+            "compact" => {
+                tracing_subscriber::registry()
+                    .with(fmt::layer().compact())
+                    .with(env_filter)
+                    .init();
+            }
+            "pretty" => {
+                tracing_subscriber::registry()
+                    .with(fmt::layer().pretty())
+                    .with(env_filter)
+                    .init();
+            }
+            "json" => {
+                tracing_subscriber::registry()
+                    .with(fmt::layer().json())
+                    .with(env_filter)
+                    .init();
+            }
+            _ => {
+                tracing_subscriber::registry()
+                    .with(fmt::layer().event_format(plain_format))
+                    .with(env_filter)
+                    .init();
+            }
+        }
+    } else {
+        tracing_subscriber::registry()
+            .with(fmt::layer().event_format(plain_format))
+            .with(env_filter)
+            .init();
+    }
 
     match cli.command {
         Some(Commands::Fetch {}) => {
@@ -37,7 +90,8 @@ async fn main() -> AppResult<()> {
         }
         Some(Commands::New { path }) => {
             if try_exists(&path).await? {
-                error!("Directory `{path}` already exists. Cancelling.");
+                error!("Directory `{path}` already exists. Cancelled.");
+                return Ok(());
             }
 
             DirBuilder::new().recursive(true).create(&path).await?;
@@ -73,7 +127,7 @@ async fn main() -> AppResult<()> {
             outfile.write_all(NEW_GITIGNORE.as_bytes()).await?;
             outfile.flush().await?;
 
-            info!("Created new project in `{path}`");
+            info!("Created new project at `{path}`");
         }
         Some(Commands::Serve {}) => {
             if let Some(cmd_line_cfg_file) = cli.config {
@@ -91,7 +145,7 @@ async fn main() -> AppResult<()> {
             serve(&host, &port, pool).await?;
         }
         None => {
-            println!(
+            error!(
                 "No command provided. Please run `opsql help` for a list of available commands."
             );
         }

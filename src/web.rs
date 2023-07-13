@@ -105,7 +105,7 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
     debug!("Parsing address for `serve` binding: {}", addr_str);
     let address: SocketAddr = format!("{}:{}", host, port).parse()?;
 
-    info!("Server listening at {}...", address);
+    info!("Listening at {address}...");
     axum::Server::bind(&address)
         .serve(app.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
