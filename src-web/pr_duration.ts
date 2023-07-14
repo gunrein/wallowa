@@ -9,8 +9,8 @@ async function doPlot() {
         marks: [
           Plot.ruleY([0]),
           Plot.lineY(data, {x: "day", y: "duration", stroke: "repo"}),
-          Plot.text(data, Plot.selectLast({x: "day", y: "duration", z: "repo", text: "repo", textAnchor: "start", dx: 3}))
-        ]
+        ],
+        color: { legend: true },
       })
     const div = document.querySelector("#vis");
     if (div) div.append(plot);
