@@ -17,7 +17,7 @@
     "build:static": "node ./copy-static.js",
     "build:compress": "node ./compress.js",
     "build:backend": "cargo build --release",
-    "build": "npm-run-all --sequential clean build:ts build:css build:esbuild build:static build:compress build:backend",
+    "build": "npm-run-all --sequential clean build:css build:esbuild build:static build:compress build:backend",
     "preview": "cargo run --release",
     "clean": "rm -rf ./dist"
   },

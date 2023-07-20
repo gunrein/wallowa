@@ -5,8 +5,10 @@ use axum::{
     routing::get,
     Router,
 };
-use minijinja::{context, Environment, Source};
+use minijinja::{context, path_loader, Environment};
 use minijinja_autoreload::AutoReloader;
+use reqwest::header;
+use rust_embed::RustEmbed;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::signal;
 use tower_http::trace::TraceLayer;
@@ -55,17 +57,34 @@ pub async fn bookmark(State(state): State<Arc<AppState>>) -> AppResult<Html<Stri
 }
 
 pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
-    let reloader = AutoReloader::new(|notifier| {
-        let mut env = Environment::new();
-        // TODO embed templates
-        let template_path = "templates";
-        notifier.watch_path(template_path, true);
-        env.set_source(Source::from_path(template_path));
-        Ok(env)
-    });
+    let (env, reloader) = if cfg!(debug_assertions) {
+        (
+            None,
+            Some(AutoReloader::new(|notifier| {
+                let mut env = Environment::new();
+                let template_path = "templates";
+                env.set_loader(path_loader(&template_path));
+                notifier.set_fast_reload(true);
+                notifier.watch_path(template_path, true);
+                Ok(env)
+            })),
+        )
+    } else {
+        let mut env: Environment<'static> = Environment::new();
+        for template_name in TemplateSrc::iter() {
+            if let Some(template) = TemplateSrc::get(&template_name) {
+                env.add_template_owned(
+                    template_name,
+                    String::from_utf8(template.data.into_owned())?,
+                )?;
+            }
+        }
+        (Some(env), None)
+    };
 
     let state = Arc::new(AppState {
         template_loader: reloader,
+        template_env: env,
         pool,
     });
 
@@ -94,8 +113,8 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
         .route("/sources", get(sources))
         .route("/bookmark", get(bookmark))
         .route("/", get(dashboard))
-        // The compression layer comes before the `/static` since `/static` is pre-compressed
-        // by the build process (for release builds)
+        // The compression layer comes before `/static` since `/static` is pre-compressed
+        // by the build process for release builds
         .layer(compression_layer)
         .nest_service("/static", static_dir)
         .with_state(state)
@@ -119,9 +138,26 @@ pub fn render(
     template: &str,
     ctx: minijinja::value::Value,
 ) -> AppResult<String> {
-    let env = state.template_loader.acquire_env()?;
-    let tmpl = env.get_template(template)?;
-    Ok(tmpl.render(ctx)?)
+    // Use the template loader if it exists, otherwise use the environment
+    let rendered = if state.template_loader.is_some() {
+        state
+            .template_loader
+            .as_ref()
+            .unwrap()
+            .acquire_env()?
+            .get_template(template)?
+            .render(ctx)
+    } else {
+        // If template_loader is None then template_env should be Some. If it isn't, treat the
+        // situation as a fatal error.
+        state
+            .template_env
+            .as_ref()
+            .unwrap()
+            .get_template(template)?
+            .render(ctx)
+    };
+    Ok(rendered?)
 }
 
 async fn shutdown_signal() {
@@ -153,7 +189,8 @@ async fn shutdown_signal() {
 }
 
 pub struct AppState {
-    template_loader: AutoReloader,
+    template_loader: Option<AutoReloader>,
+    template_env: Option<Environment<'static>>,
     pub pool: Pool,
 }
 
@@ -165,5 +202,32 @@ impl IntoResponse for AppError {
             format!("Something went wrong: {}", self.0),
         )
             .into_response()
+    }
+}
+
+#[derive(RustEmbed)]
+#[folder = "templates/"]
+struct TemplateSrc;
+
+#[derive(RustEmbed)]
+#[folder = "dist/"]
+struct Asset;
+
+pub struct StaticFile<T>(pub T);
+
+impl<T> IntoResponse for StaticFile<T>
+where
+    T: Into<String>,
+{
+    fn into_response(self) -> Response {
+        let path = self.0.into();
+
+        match Asset::get(path.as_str()) {
+            Some(content) => {
+                let mime = mime_guess::from_path(path).first_or_octet_stream();
+                ([(header::CONTENT_TYPE, mime.as_ref())], content.data).into_response()
+            }
+            None => (StatusCode::NOT_FOUND, "404 Not Found").into_response(),
+        }
     }
 }

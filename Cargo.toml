@@ -18,11 +18,13 @@ dotenvy = "0.15"
 duckdb = { version = "0.8", features = ["json", "chrono", "bundled", "r2d2", "serde_json", "extensions-full", "num"] }
 futures = "0.3"
 inquire = "0.6"
-minijinja-autoreload = "0.34"
-minijinja = { version = "0.34", features = ["source"] }
+mime_guess = "2.0"
+minijinja-autoreload = "1"
+minijinja = { version = "1", features = ["unicode", "loader"] }
 parse_link_header = "0.3"
 r2d2 = "0.8"
 reqwest = { version = "0.11", features = ["json"] }
+rust-embed = { version = "6.8", features = ["tokio", "mime-guess"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9"
