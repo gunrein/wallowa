@@ -1,6 +1,6 @@
 use axum::{
     extract::State,
-    http::StatusCode,
+    http::{StatusCode, Uri},
     response::{Html, IntoResponse, Response},
     routing::get,
     Router,
@@ -12,7 +12,7 @@ use rust_embed::RustEmbed;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::signal;
 use tower_http::trace::TraceLayer;
-use tower_http::{compression::CompressionLayer, services::ServeDir, CompressionLevel};
+use tower_http::{compression::CompressionLayer, CompressionLevel};
 use tracing::{debug, info};
 
 use crate::{
@@ -56,6 +56,14 @@ pub async fn bookmark(State(state): State<Arc<AppState>>) -> AppResult<Html<Stri
     )?))
 }
 
+pub async fn static_file(uri: Uri) -> impl IntoResponse {
+    let mut path = uri.path().trim_start_matches('/').to_string();
+    if path.starts_with("static/") {
+        path = path.replace("static/", "");
+    }
+    StaticFile(path)
+}
+
 pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
     let (env, reloader) = if cfg!(debug_assertions) {
         (
@@ -88,11 +96,6 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
         pool,
     });
 
-    // TODO embed static files
-    let static_dir = ServeDir::new("dist")
-        .precompressed_br()
-        .precompressed_gzip();
-
     let compression_level_cfg: String = config_value("server.response.compression.level").await?;
     let compression_level = match compression_level_cfg.to_ascii_lowercase().as_str() {
         "algo_default" => CompressionLevel::Default,
@@ -113,10 +116,8 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
         .route("/sources", get(sources))
         .route("/bookmark", get(bookmark))
         .route("/", get(dashboard))
-        // The compression layer comes before `/static` since `/static` is pre-compressed
-        // by the build process for release builds
+        .route("/static/*file", get(static_file))
         .layer(compression_layer)
-        .nest_service("/static", static_dir)
         .with_state(state)
         .layer(TraceLayer::new_for_http());
 
