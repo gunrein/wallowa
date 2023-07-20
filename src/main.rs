@@ -12,7 +12,7 @@ use tokio::fs::{try_exists, DirBuilder, OpenOptions};
 use tokio::io::AsyncWriteExt;
 use tracing::{error, info};
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> AppResult<()> {
     dotenv().ok();
 
