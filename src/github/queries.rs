@@ -65,7 +65,7 @@ ORDER BY "owner", repo;
         .collect::<Result<Vec<CountByRepo>, duckdb::Error>>()?)
 }
 
-pub fn merged_pr_duration_30_day_rolling_avg_hours(
+pub fn merged_pr_duration_rolling_daily_average(
     pool: &Pool,
     start_date: DateTime<FixedOffset>,
     end_date: DateTime<FixedOffset>,
@@ -73,11 +73,13 @@ pub fn merged_pr_duration_30_day_rolling_avg_hours(
     debug!("Running `avg_merged_pr_duration`");
 
     let conn = pool.get()?;
-
+    
+    // TODO make sure there is no duplication of PRs
+    // TODO is the cast to DATE needed?
     let mut stmt = conn.prepare(
         r#"
--- merged_pr_duration_30_day_rolling_avg_hours
--- Duration of merged GitHub Pull Requests, rolling 30 day average in hours
+-- merged_pr_duration_rolling_daily_average
+-- Duration of merged GitHub Pull Requests, rolling daily average
 WITH calendar_day AS (
     -- Generate a series of days so that each day has a rolling average represented
     SELECT CAST(unnest(generate_series(CAST(? AS DATE), CAST(? AS DATE), interval '1' day)) AS DATE) as "day"

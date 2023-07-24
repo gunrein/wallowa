@@ -16,7 +16,7 @@ use crate::{
     AppResult,
 };
 
-use super::{fetch::fetch_all, queries::merged_pr_duration_30_day_rolling_avg_hours};
+use super::{fetch::fetch_all, queries::merged_pr_duration_rolling_daily_average};
 
 /// All page-related routes for GitHub
 pub fn page_routes() -> Router<Arc<AppState>, Body> {
@@ -29,8 +29,8 @@ pub fn page_routes() -> Router<Arc<AppState>, Body> {
 /// All data-related routes for GitHub
 pub fn data_routes() -> Router<Arc<AppState>, Body> {
     Router::new().route(
-        "/merged_pr_duration_30_day_rolling_avg_hours.arrow",
-        get(merged_pr_duration_30_day_rolling_avg_hours_arrow),
+        "/merged_pr_duration_rolling_daily_average.arrow",
+        get(merged_pr_duration_rolling_daily_average_arrow),
     )
 }
 
@@ -60,7 +60,7 @@ fn parse_date_param(date_param: Option<&String>) -> AppResult<DateTime<FixedOffs
     Ok(date)
 }
 
-async fn merged_pr_duration_30_day_rolling_avg_hours_arrow(
+async fn merged_pr_duration_rolling_daily_average_arrow(
     State(state): State<Arc<AppState>>,
     Query(params): Query<HashMap<String, String>>,
 ) -> AppResult<Vec<u8>> {
@@ -69,7 +69,7 @@ async fn merged_pr_duration_30_day_rolling_avg_hours_arrow(
 
     // TODO better error handling for invalid or missing parameters
 
-    let results = merged_pr_duration_30_day_rolling_avg_hours(&state.pool, start_date, end_date)?;
+    let results = merged_pr_duration_rolling_daily_average(&state.pool, start_date, end_date)?;
 
     let mut ipc_data: Vec<u8> = Vec::new();
     if !results.is_empty() {

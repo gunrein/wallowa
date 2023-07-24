@@ -2,7 +2,7 @@ import * as Plot from "@observablehq/plot";
 import { tableFromIPC } from "@apache-arrow/ts";
 
 async function doPlot(startDate: Date, endDate: Date) {
-  const data = await tableFromIPC(fetch(`/data/github/merged_pr_duration_30_day_rolling_avg_hours.arrow?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`))
+  const data = await tableFromIPC(fetch(`/data/github/merged_pr_duration_rolling_daily_average.arrow?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`))
   const plot = Plot.plot({
       style: "overflow: visible;",
       y: {grid: true},
@@ -84,7 +84,7 @@ function getAbsoluteRange(): { startDate: Date; endDate: Date } {
   return { startDate, endDate };
 }
 
-function timeRangeChanged(ev: Event) {
+function dateRangeChanged(ev: Event) {
   const range = (ev.target as HTMLInputElement)?.value;
 
   if (range === 'absolute') {
@@ -102,7 +102,7 @@ function timeRangeChanged(ev: Event) {
   }
 }
 
-document.querySelector("#time_range")?.addEventListener("input", timeRangeChanged);
+document.querySelector("#date_range")?.addEventListener("input", dateRangeChanged);
 
 const endDate = dateAtStartOfDayUTC(new Date());
 const startDate = dateOffsetUTC(endDate, 30);

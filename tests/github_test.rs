@@ -6,7 +6,7 @@ use duckdb::arrow::{
 use opsql::{
     db::open_db_pool,
     github::fetch::{fetch_commits, fetch_pulls, ResponseInfo},
-    github::queries::merged_pr_duration_30_day_rolling_avg_hours,
+    github::queries::merged_pr_duration_rolling_daily_average,
 };
 use std::{fs, path::Path};
 
@@ -164,7 +164,7 @@ fn test_avg_pr_query() {
     fetch_pulls(&pool, &vec![response_info]).expect("Unable to fetch pulls");
 
     // Run the query being tested
-    let results = merged_pr_duration_30_day_rolling_avg_hours(
+    let results = merged_pr_duration_rolling_daily_average(
         &pool,
         Utc.with_ymd_and_hms(2011, 1, 1, 0, 0, 0)
             .unwrap()
