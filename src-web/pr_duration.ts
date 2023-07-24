@@ -31,7 +31,7 @@ function justDatePartAsStringUTC(date: Date): string {
   return date.toISOString().split('T')[0];
 }
 
-function parseOffset(range: string | undefined): number {
+function parseOffset(range: string): number {
   let offset = 30; // default to 30 days of offset
   switch (range) {
     case 'last_thirty':
@@ -85,28 +85,51 @@ function getAbsoluteRange(): { startDate: Date; endDate: Date } {
 }
 
 function dateRangeChanged(_ev: Event) {
-  const range = document.querySelector<HTMLInputElement>("#date_range")?.value;
+  const range = document.querySelector<HTMLInputElement>("#date_range")?.value ?? 'last_thirty';
 
+  let startDate: Date, endDate: Date;
   if (range === 'absolute') {
     document.querySelector("#absolute_range_inputs")?.classList.remove('hidden');
-    const { startDate, endDate } = getAbsoluteRange();
-    updateAbsoluteRange(startDate, endDate);
-    doPlot(startDate, endDate);
+    ({ startDate, endDate } = getAbsoluteRange());
   } else {
     document.querySelector("#absolute_range_inputs")?.classList.add('hidden');
-    let offset = parseOffset(range);
-    const endDate = dateAtStartOfDayUTC(new Date());
-    const startDate = dateOffsetUTC(endDate, offset);
-    updateAbsoluteRange(startDate, endDate);
-    doPlot(startDate, endDate)
+    endDate = dateAtStartOfDayUTC(new Date());
+    startDate = dateOffsetUTC(endDate, parseOffset(range));
+  }
+  localStorage.setItem('dateRange', JSON.stringify({ range, startDate, endDate }));
+  updateAbsoluteRange(startDate, endDate);
+  doPlot(startDate, endDate);
+}
+
+// Setup the default date range and load any stored date range information
+let endDate = dateAtStartOfDayUTC(new Date());
+let startDate = dateOffsetUTC(endDate, 30);
+let range = 'last_thirty';
+const storedDateRange = localStorage.getItem('dateRange');
+if (storedDateRange) {
+  ({ range, startDate, endDate } = JSON.parse(storedDateRange));
+  // When the range isn't absolute then the endDate needs to be today (UTC) and the startDate needs
+  // to be updated relative to endDate instead of the stored values being used. Otherwise the 
+  // date range used will be incorrect, but hard to spot by the user.
+  if (range != 'absolute') {
+    endDate = dateAtStartOfDayUTC(new Date());
+    startDate = dateOffsetUTC(endDate, parseOffset(range));
+  } else {
+    document.querySelector("#absolute_range_inputs")?.classList.remove('hidden');
+    // Since the stored range is absolute, update both startDate and endDate with the stored
+    // date values
+    startDate = new Date(startDate);
+    endDate = new Date(endDate);
+  }
+  const dateRangeEl = document.querySelector<HTMLInputElement>("#date_range");
+  if (dateRangeEl) {
+    dateRangeEl.value = range;
   }
 }
+updateAbsoluteRange(startDate, endDate);
 
 document.querySelector("#date_range")?.addEventListener("input", dateRangeChanged);
 document.querySelector("#start_date")?.addEventListener("input", dateRangeChanged);
 document.querySelector("#end_date")?.addEventListener("input", dateRangeChanged);
 
-const endDate = dateAtStartOfDayUTC(new Date());
-const startDate = dateOffsetUTC(endDate, 30);
-updateAbsoluteRange(startDate, endDate);
 doPlot(startDate, endDate);
