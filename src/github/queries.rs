@@ -74,7 +74,6 @@ pub fn merged_pr_duration_rolling_daily_average(
 
     let conn = pool.get()?;
 
-    // TODO make sure there is no duplication of PRs
     let mut stmt = conn.prepare(
         r#"
 -- merged_pr_duration_rolling_daily_average
@@ -89,6 +88,7 @@ pulls AS (
         "data_source",
         unnest(json_transform_strict("data",
             '[{
+                "url": "VARCHAR",
                 "base": {
                     "repo": {
                         "name": "VARCHAR",
@@ -108,7 +108,7 @@ pulls AS (
     AND data_type = 'pulls'
 ),
 rolling AS (
-    SELECT
+    SELECT DISTINCT ON (row.url)
         row.base.repo.owner.login AS "owner",
         row.base.repo.name AS repo,
         CAST(row.created_at AS DATE) AS created_date,
