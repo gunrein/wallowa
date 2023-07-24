@@ -1,7 +1,7 @@
 use crate::db::Pool;
 use anyhow::Result;
 use arrow::record_batch::RecordBatch;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, FixedOffset};
 use duckdb::params;
 use tracing::debug;
 
@@ -67,7 +67,8 @@ ORDER BY "owner", repo;
 
 pub fn merged_pr_duration_30_day_rolling_avg_hours(
     pool: &Pool,
-    end_date: DateTime<Utc>,
+    start_date: DateTime<FixedOffset>,
+    end_date: DateTime<FixedOffset>,
 ) -> Result<Vec<RecordBatch>> {
     debug!("Running `avg_merged_pr_duration`");
 
@@ -79,7 +80,7 @@ pub fn merged_pr_duration_30_day_rolling_avg_hours(
 -- Duration of merged GitHub Pull Requests, rolling 30 day average in hours
 WITH calendar_day AS (
     -- Generate a series of days so that each day has a rolling average represented
-    SELECT CAST(unnest(generate_series(CAST(? AS DATE) - interval 30 day, CAST(? AS DATE), interval '1' day)) AS DATE) as "day"
+    SELECT CAST(unnest(generate_series(CAST(? AS DATE), CAST(? AS DATE), interval '1' day)) AS DATE) as "day"
 ),
 pulls AS (
     SELECT
@@ -128,6 +129,6 @@ ORDER BY 1,2
 "#)?;
 
     Ok(stmt
-        .query_arrow(params![end_date, end_date])?
+        .query_arrow(params![start_date, end_date])?
         .collect::<Vec<RecordBatch>>())
 }

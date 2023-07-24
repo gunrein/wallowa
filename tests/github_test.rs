@@ -166,7 +166,12 @@ fn test_avg_pr_query() {
     // Run the query being tested
     let results = merged_pr_duration_30_day_rolling_avg_hours(
         &pool,
-        Utc.with_ymd_and_hms(2011, 1, 31, 0, 0, 0).unwrap(),
+        Utc.with_ymd_and_hms(2011, 1, 1, 0, 0, 0)
+            .unwrap()
+            .fixed_offset(),
+        Utc.with_ymd_and_hms(2011, 1, 31, 0, 0, 0)
+            .unwrap()
+            .fixed_offset(),
     )
     .expect("Unable to calculate average duration for merged PRs");
 
@@ -193,30 +198,4 @@ fn test_avg_pr_query() {
             .expect("`repo` column not returned"),
     );
     assert_eq!(expected_repos, *repos, "incorrect `repo` column returned");
-
-    /*
-        let expected_first_31_days = &expected[0..31];
-        assert_eq!(expected_first_31_days.len(), results.len());
-        for (expected, actual) in expected.iter().zip(results.iter()) {
-            assert_eq!(expected.date, actual.date);
-            if expected.duration.is_none() && actual.duration.is_none() {
-                // Passed, they match
-                continue;
-            } else if expected.duration.is_none() && actual.duration.is_some() {
-                // Failed, they don't match
-                assert!(false);
-            } else if expected.duration.is_some() && actual.duration.is_none() {
-                // Failed, they don't match
-                assert!(false);
-            } else {
-                // Both are Some, loosely compare the values
-                assert!(approx_eq!(
-                    f64,
-                    expected.duration.unwrap(),
-                    actual.duration.unwrap(),
-                    epsilon = 0.000000001
-                ));
-            }
-        }
-    */
 }

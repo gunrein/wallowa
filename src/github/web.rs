@@ -1,13 +1,13 @@
-use std::{io::BufWriter, sync::Arc};
+use std::{collections::HashMap, io::BufWriter, sync::Arc};
 
 use axum::{
     body::Body,
-    extract::State,
+    extract::{Query, State},
     response::Html,
     routing::{get, post},
     Router,
 };
-use chrono::{TimeZone, Utc};
+use chrono::{DateTime, Datelike, FixedOffset, TimeZone, Utc};
 use duckdb::arrow::{datatypes::Schema, ipc::writer::FileWriter};
 use minijinja::context;
 
@@ -46,11 +46,30 @@ async fn fetch_source(State(state): State<Arc<AppState>>) -> AppResult<Html<Stri
     )?))
 }
 
+fn parse_date_param(date_param: Option<&String>) -> AppResult<DateTime<FixedOffset>> {
+    let date = if let Some(date_str) = date_param {
+        DateTime::parse_from_rfc3339(date_str)?
+    } else {
+        let now = chrono::offset::Utc::now();
+        let beginning_of_today = Utc
+            .with_ymd_and_hms(now.year(), now.month(), now.day(), 0, 0, 0)
+            .unwrap();
+        beginning_of_today.fixed_offset()
+    };
+
+    Ok(date)
+}
+
 async fn merged_pr_duration_30_day_rolling_avg_hours_arrow(
     State(state): State<Arc<AppState>>,
+    Query(params): Query<HashMap<String, String>>,
 ) -> AppResult<Vec<u8>> {
-    let end_date = Utc.with_ymd_and_hms(2023, 6, 16, 0, 0, 0).unwrap();
-    let results = merged_pr_duration_30_day_rolling_avg_hours(&state.pool, end_date)?;
+    let start_date = parse_date_param(params.get("start_date"))?;
+    let end_date = parse_date_param(params.get("end_date"))?;
+
+    // TODO better error handling for invalid or missing parameters
+
+    let results = merged_pr_duration_30_day_rolling_avg_hours(&state.pool, start_date, end_date)?;
 
     let mut ipc_data: Vec<u8> = Vec::new();
     if !results.is_empty() {
