@@ -70,19 +70,18 @@ pub fn merged_pr_duration_rolling_daily_average(
     start_date: DateTime<FixedOffset>,
     end_date: DateTime<FixedOffset>,
 ) -> Result<Vec<RecordBatch>> {
-    debug!("Running `avg_merged_pr_duration`");
+    debug!("Running `merged_pr_duration_rolling_daily_average`");
 
     let conn = pool.get()?;
-    
+
     // TODO make sure there is no duplication of PRs
-    // TODO is the cast to DATE needed?
     let mut stmt = conn.prepare(
         r#"
 -- merged_pr_duration_rolling_daily_average
 -- Duration of merged GitHub Pull Requests, rolling daily average
 WITH calendar_day AS (
     -- Generate a series of days so that each day has a rolling average represented
-    SELECT CAST(unnest(generate_series(CAST(? AS DATE), CAST(? AS DATE), interval '1' day)) AS DATE) as "day"
+    SELECT CAST(unnest(generate_series(CAST(? AS TIMESTAMP), CAST(? AS TIMESTAMP), interval '1' day)) AS DATE) as "day"
 ),
 pulls AS (
     SELECT
@@ -131,6 +130,6 @@ ORDER BY 1,2
 "#)?;
 
     Ok(stmt
-        .query_arrow(params![start_date, end_date])?
+        .query_arrow(params![start_date.naive_utc(), end_date.naive_utc()])?
         .collect::<Vec<RecordBatch>>())
 }
