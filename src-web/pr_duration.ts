@@ -31,7 +31,7 @@ function justDatePartAsStringUTC(date: Date): string {
   return date.toISOString().split('T')[0];
 }
 
-function parseOffset(range: string): number {
+function parseOffset(range: string | undefined): number {
   let offset = 30; // default to 30 days of offset
   switch (range) {
     case 'last_thirty':
@@ -84,8 +84,8 @@ function getAbsoluteRange(): { startDate: Date; endDate: Date } {
   return { startDate, endDate };
 }
 
-function dateRangeChanged(ev: Event) {
-  const range = (ev.target as HTMLInputElement)?.value;
+function dateRangeChanged(_ev: Event) {
+  const range = document.querySelector<HTMLInputElement>("#date_range")?.value;
 
   if (range === 'absolute') {
     document.querySelector("#absolute_range_inputs")?.classList.remove('hidden');
@@ -103,6 +103,8 @@ function dateRangeChanged(ev: Event) {
 }
 
 document.querySelector("#date_range")?.addEventListener("input", dateRangeChanged);
+document.querySelector("#start_date")?.addEventListener("input", dateRangeChanged);
+document.querySelector("#end_date")?.addEventListener("input", dateRangeChanged);
 
 const endDate = dateAtStartOfDayUTC(new Date());
 const startDate = dateOffsetUTC(endDate, 30);
