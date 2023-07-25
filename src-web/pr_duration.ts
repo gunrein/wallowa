@@ -7,8 +7,11 @@ async function doPlot(startDate: Date, endDate: Date) {
       style: "overflow: visible;",
       y: {grid: true},
       marks: [
+        Plot.axisX({label: "Date" }),
         Plot.ruleY([0]),
-        Plot.lineY(data, {x: "day", y: "duration", stroke: "repo"}),
+        Plot.axisY({label: "Rolling 30-day average number of days to merge"}),
+        Plot.lineY(data, {x: "day", y: "duration", stroke: "repo", tip: "x"}),
+        Plot.crosshairX(data, {x: "day", y: "duration"})
       ],
       color: { legend: true },
     })
