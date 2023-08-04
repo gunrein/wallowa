@@ -172,6 +172,7 @@ fn test_avg_pr_query() {
         Utc.with_ymd_and_hms(2011, 1, 31, 0, 0, 0)
             .unwrap()
             .fixed_offset(),
+        &vec![],
     )
     .expect("Unable to calculate average duration for merged PRs");
 

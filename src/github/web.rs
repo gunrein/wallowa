@@ -1,22 +1,27 @@
-use std::{collections::HashMap, io::BufWriter, sync::Arc};
+use std::{io::BufWriter, sync::Arc};
 
 use axum::{
     body::Body,
-    extract::{Query, State},
+    extract::State,
     response::Html,
     routing::{get, post},
     Router,
 };
-use chrono::{DateTime, Datelike, FixedOffset, TimeZone, Utc};
+use axum_extra::extract::Query;
+use chrono::{DateTime, Datelike, Days, FixedOffset, TimeZone, Utc};
 use duckdb::arrow::{datatypes::Schema, ipc::writer::FileWriter};
 use minijinja::context;
+use serde::Deserialize;
 
 use crate::{
     web::{render, AppState},
     AppResult,
 };
 
-use super::{fetch::fetch_all, queries::merged_pr_duration_rolling_daily_average};
+use super::{
+    fetch::fetch_all,
+    queries::{merged_pr_duration_rolling_daily_average, select_distinct_repos},
+};
 
 /// All page-related routes for GitHub
 pub fn page_routes() -> Router<Arc<AppState>, Body> {
@@ -46,9 +51,21 @@ async fn fetch_source(State(state): State<Arc<AppState>>) -> AppResult<Html<Stri
     )?))
 }
 
-fn parse_date_param(date_param: Option<&String>) -> AppResult<DateTime<FixedOffset>> {
-    let date = if let Some(date_str) = date_param {
-        DateTime::parse_from_rfc3339(date_str)?
+#[derive(Deserialize, Debug)]
+struct MergedPRParams {
+    start_date: Option<DateTime<FixedOffset>>,
+    end_date: Option<DateTime<FixedOffset>>,
+    #[serde(default)]
+    repo: Vec<String>,
+}
+
+async fn merged_pr_duration_rolling_daily_average_arrow(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<MergedPRParams>,
+) -> AppResult<Vec<u8>> {
+    // TODO better error handling for invalid or missing parameters
+    let end_date = if let Some(end) = params.end_date {
+        end
     } else {
         let now = chrono::offset::Utc::now();
         let beginning_of_today = Utc
@@ -56,20 +73,14 @@ fn parse_date_param(date_param: Option<&String>) -> AppResult<DateTime<FixedOffs
             .unwrap();
         beginning_of_today.fixed_offset()
     };
+    let start_date = if let Some(start) = params.start_date {
+        start
+    } else {
+        end_date.checked_sub_days(Days::new(30)).unwrap()
+    };
 
-    Ok(date)
-}
-
-async fn merged_pr_duration_rolling_daily_average_arrow(
-    State(state): State<Arc<AppState>>,
-    Query(params): Query<HashMap<String, String>>,
-) -> AppResult<Vec<u8>> {
-    let start_date = parse_date_param(params.get("start_date"))?;
-    let end_date = parse_date_param(params.get("end_date"))?;
-
-    // TODO better error handling for invalid or missing parameters
-
-    let results = merged_pr_duration_rolling_daily_average(&state.pool, start_date, end_date)?;
+    let results =
+        merged_pr_duration_rolling_daily_average(&state.pool, start_date, end_date, &params.repo)?;
 
     let mut ipc_data: Vec<u8> = Vec::new();
     if !results.is_empty() {
@@ -95,11 +106,13 @@ async fn merged_pr_duration_rolling_daily_average_arrow(
 }
 
 async fn github_pr_duration(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
+    let distinct_repos = select_distinct_repos(&state.pool)?;
     let html = render(
         state,
         "github/pr_duration.html",
         context! {
             current_nav => "/github/pr_duration",
+            repos => distinct_repos,
         },
     )?;
     Ok(Html(html))
