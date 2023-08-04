@@ -8,7 +8,7 @@
     "dev:static": "node ./copy-static.js",
     "dev:css": "npx tailwindcss -i ./src-web/app.css -o ./dist/app.css --watch",
     "dev:esbuild": "node ./esbuild.watch.mjs",
-    "dev:backend": "RUST_LOG=debug RUST_BACKTRACE=1 cargo run serve",
+    "dev:backend": "RUST_LOG=info RUST_BACKTRACE=1 cargo run serve",
     "dev": "rm -rf ./dist && npm-run-all --parallel dev:*",
     "fetch": "RUST_LOG=debug RUST_BACKTRACE=1 cargo run fetch",
     "build:ts": "tsc -p tsconfig.json",
