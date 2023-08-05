@@ -9,7 +9,7 @@ pub struct Cli {
         global = true,
         env = "WALLOWA_CONFIG",
         value_name = "CONFIG",
-        default_value = "opsql.config.toml"
+        default_value = "wallowa.config.toml"
     )]
     pub config: Option<String>,
 

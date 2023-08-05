@@ -2,15 +2,15 @@ use std::path::Path;
 
 use clap::Parser;
 use dotenvy::dotenv;
-use opsql::cli::{Cli, Commands};
-use opsql::db::open_db_pool;
-use opsql::web::serve;
-use opsql::{
-    config_value, init_config, init_logging, AppResult, NEW_CONFIG, NEW_DOT_ENV, NEW_GITIGNORE,
-};
 use tokio::fs::{try_exists, DirBuilder, OpenOptions};
 use tokio::io::AsyncWriteExt;
 use tracing::{error, info};
+use wallowa::cli::{Cli, Commands};
+use wallowa::db::open_db_pool;
+use wallowa::web::serve;
+use wallowa::{
+    config_value, init_config, init_logging, AppResult, NEW_CONFIG, NEW_DOT_ENV, NEW_GITIGNORE,
+};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> AppResult<()> {
@@ -26,7 +26,7 @@ async fn main() -> AppResult<()> {
             if let Some(cmd_line_cfg_file) = cli.config {
                 init_config(cmd_line_cfg_file.as_str())?;
             } else {
-                init_config("opsql.config")?;
+                init_config("wallowa.config")?;
             }
 
             // Each source is expected to run *only* if it is configured
@@ -35,7 +35,7 @@ async fn main() -> AppResult<()> {
 
             info!("Fetching from:");
             info!("    GitHub...");
-            opsql::github::fetch::fetch_all(&pool).await?;
+            wallowa::github::fetch::fetch_all(&pool).await?;
         }
         Some(Commands::New { path }) => {
             if try_exists(&path).await? {
@@ -51,7 +51,7 @@ async fn main() -> AppResult<()> {
                 .write(true)
                 .create(true)
                 .truncate(true)
-                .open(project_path.join("opsql.config.toml"))
+                .open(project_path.join("wallowa.config.toml"))
                 .await?;
             outfile.write_all(NEW_CONFIG.as_bytes()).await?;
             outfile.flush().await?;
@@ -80,15 +80,15 @@ async fn main() -> AppResult<()> {
             info!("");
             info!("To get started:");
             info!("");
-            info!("  1. Add your GitHub repos to `opsql.config.toml`");
+            info!("  1. Add your GitHub repos to `wallowa.config.toml`");
             info!("  2. Add your GitHub access key to `.env`");
             info!(
-                "  3. Fetch initial data: `opsql fetch` (this can take a while for active repos)"
+                "  3. Fetch initial data: `wallowa fetch` (this can take a while for active repos)"
             );
-            info!("  4. Start the server: `opsql serve`");
-            info!("  5. Open your browser to https://localhost:3825/");
+            info!("  4. Start the server: `wallowa serve`");
+            info!("  5. Open your browser to https://localhost:9838/");
             info!("");
-            info!("Check out the documentation at https://localhost:3825/docs/ or https://www.opsql.io/docs/");
+            info!("Check out the documentation at https://localhost:9838/docs/ or https://www.wallowa.io/docs/");
             info!("");
             info!("Enjoy!");
         }
@@ -96,7 +96,7 @@ async fn main() -> AppResult<()> {
             if let Some(cmd_line_cfg_file) = cli.config {
                 init_config(cmd_line_cfg_file.as_str())?;
             } else {
-                init_config("opsql.config")?;
+                init_config("wallowa.config")?;
             }
 
             let database_string: String = config_value("database").await?;

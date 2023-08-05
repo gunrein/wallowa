@@ -3,12 +3,12 @@ use duckdb::arrow::{
     array::{as_primitive_array, as_string_array, Date32Array, Float64Array, StringArray},
     datatypes::Date32Type,
 };
-use opsql::{
+use std::{fs, path::Path};
+use wallowa::{
     db::open_db_pool,
     github::fetch::{fetch_commits, fetch_pulls, ResponseInfo},
     github::queries::merged_pr_duration_rolling_daily_average,
 };
-use std::{fs, path::Path};
 
 #[test]
 fn test_github_commits() {

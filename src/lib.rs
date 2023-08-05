@@ -37,11 +37,11 @@ pub fn init_config(config_path: &str) -> Result<()> {
         .with_list_parse_key("github.repos");
 
     let config = config::Config::builder()
-        .set_default("database", "opsql.db")?
+        .set_default("database", "wallowa.db")?
         .set_default("github.per_page", "100")?
         .set_default::<&str, Vec<String>>("github.repos", vec![])?
         .set_default("server.host", "127.0.0.1")?
-        .set_default("server.port", "3825")?
+        .set_default("server.port", "9838")?
         .set_default("server.response.compression.br", false)?
         .set_default("server.response.compression.gzip", true)?
         .set_default("server.response.compression.zstd", true)?
@@ -133,10 +133,10 @@ pub const NEW_GITIGNORE: &str = r#"
 # Avoid committing sensitive environment variables to source control
 .env
 
-opsql.db.wal
+wallowa.db.wal
 
 # Optionally ignore the database itself
-#opsql.db
+#wallowa.db
 "#;
 
 pub const NEW_DOT_ENV: &str = r#"# Put your authentication keys in this file to avoid committing
@@ -145,28 +145,28 @@ WALLOWA_GITHUB_AUTH_TOKEN='YOUR_TOKEN'
 "#;
 
 pub const NEW_CONFIG: &str = r#"# Config files are looked for at
-# `opsql.config.[toml | json | yaml | ini | ron | json5]` by default.
+# `wallowa.config.[toml | json | yaml | ini | ron | json5]` by default.
 # This file is in [TOML](https://github.com/toml-lang/toml) format.
-# You can specify a config file to use with the `opsql --config CONFIG`
-# argument or using the `OPSQL_CONFIG` environment variable
-# (`OPSQL_CONFIG=opsql.config.toml`, for example).
+# You can specify a config file to use with the `wallowa --config CONFIG`
+# argument or using the `WALLOWA_CONFIG` environment variable
+# (`WALLOWA_CONFIG=wallowa.config.toml`, for example).
 
 # Add any GitHub repos that you'd like to track inside the `repos = []`
-# brackets. For example, "gunrein/opsql" is currently configured.
+# brackets. For example, "gunrein/wallowa" is currently configured.
 # Default: [] (empty list)
 [github]
-repos = ["gunrein/opsql"]
+repos = ["gunrein/wallowa"]
 # The number of items to fetch per page. Default: 100
 #per_page = "100"
 
-# The database file to use. Default: opsql.db
-#database = "opsql.db"
+# The database file to use. Default: wallowa.db
+#database = "wallowa.db"
 
 [server]
 # The network address to bind to. Default: 127.0.0.1
 #host = "127.0.0.1"
-# The network port to bind to. Default: 3825
-#port = "3825"
+# The network port to bind to. Default: 9838
+#port = "9838"
 
 [server.response.compression]
 # Compression level to use for HTTP server responses. Options are:
