@@ -20,6 +20,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/static/wallowa-logo.svg" />
     <title>Wallowa {% block title %}{% endblock %}</title>
     <link href="/static/app.css" rel="stylesheet" />
     {% block head %}{% endblock %}
@@ -43,7 +44,8 @@
                     {{ x_icon() }}
               </span>
             </button>
-            <span class="px-2 py-0.5">Wallowa</span>
+              <img class="px-1" src="/static/wallowa-logo.svg" width="32" height="32" alt="Wallowa logo" />
+              <span class="px-1 py-0.5">Wallowa</span>  
           </li>
           <li
             :class="menuOpen ? '' : 'hidden'"
@@ -65,6 +67,7 @@
           {{ nav_link_with_li("/sources", "Sources", current_nav, sources_icon) }}
         </ul>
       </nav>
+
       {% block content %}{% endblock %}
     </div>
     <script type="module" src="/static/main.js"></script>
