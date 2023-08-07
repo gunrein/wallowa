@@ -4,12 +4,14 @@ use clap::Parser;
 use dotenvy::dotenv;
 use tokio::fs::{try_exists, DirBuilder, OpenOptions};
 use tokio::io::AsyncWriteExt;
+use tokio::join;
 use tracing::{error, info};
 use wallowa::cli::{Cli, Commands};
 use wallowa::db::open_db_pool;
 use wallowa::web::serve;
 use wallowa::{
-    config_value, init_config, init_logging, AppResult, NEW_CONFIG, NEW_DOT_ENV, NEW_GITIGNORE,
+    config_value, fetch_all, fetch_all_periodically, init_config, init_logging, AppResult,
+    NEW_CONFIG, NEW_DOT_ENV, NEW_GITIGNORE,
 };
 
 #[tokio::main(flavor = "current_thread")]
@@ -33,9 +35,7 @@ async fn main() -> AppResult<()> {
             let database_string: String = config_value("database").await?;
             let pool = open_db_pool(database_string.as_str(), 1)?;
 
-            info!("Fetching from:");
-            info!("    GitHub...");
-            wallowa::github::fetch::fetch_all(&pool).await?;
+            fetch_all(&pool).await?;
         }
         Some(Commands::New { path }) => {
             if try_exists(&path).await? {
@@ -86,9 +86,9 @@ async fn main() -> AppResult<()> {
                 "  3. Fetch initial data: `wallowa fetch` (this can take a while for active repos)"
             );
             info!("  4. Start the server: `wallowa serve`");
-            info!("  5. Open your browser to https://localhost:9838/");
+            info!("  5. Open your browser to https://localhost:9843/");
             info!("");
-            info!("Check out the documentation at https://localhost:9838/docs/ or https://www.wallowa.io/docs/");
+            info!("Check out the documentation at https://localhost:9843/docs/ or https://www.wallowa.io/docs/");
             info!("");
             info!("Enjoy!");
         }
@@ -102,10 +102,15 @@ async fn main() -> AppResult<()> {
             let database_string: String = config_value("database").await?;
             let pool = open_db_pool(database_string.as_str(), 1)?;
 
+            let fetcher = fetch_all_periodically(&pool);
+
             let host: String = config_value("server.host").await?;
             let port: String = config_value("server.port").await?;
+            let server = serve(&host, &port, pool.clone());
 
-            serve(&host, &port, pool).await?;
+            let (fetcher_result, server_result) = join!(fetcher, server);
+            fetcher_result?;
+            server_result?;
         }
     }
 

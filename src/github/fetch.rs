@@ -12,8 +12,11 @@ use tracing::{debug, error, info};
 /// Fetch the latest data from Github
 pub async fn fetch_all(pool: &Pool) -> Result<NaiveDateTime> {
     let repos: Vec<String> = config_value("github.repos").await?;
+    info!("Fetching from GitHub");
     let responses = request_pulls(pool, &repos).await?;
-    fetch_pulls(pool, &responses)
+    let result = fetch_pulls(pool, &responses);
+    info!("Fetching from GitHub complete");
+    result
 }
 
 /// Return the timestamp of the most recent API request

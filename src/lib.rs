@@ -1,9 +1,14 @@
-use std::sync::OnceLock;
+use std::{sync::OnceLock, time::Duration};
 
 use anyhow::Result;
 use config::Config;
-use tokio::sync::RwLock;
-use tracing::metadata::LevelFilter;
+use db::Pool;
+use tokio::{
+    sync::RwLock,
+    task::{self, JoinHandle},
+    time,
+};
+use tracing::{debug, info, metadata::LevelFilter};
 use tracing_subscriber::{
     fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
 };
@@ -12,6 +17,40 @@ pub mod cli;
 pub mod db;
 pub mod github;
 pub mod web;
+
+pub async fn fetch_all(pool: &Pool) -> AppResult<()> {
+    info!("Fetching in background");
+    github::fetch::fetch_all(pool).await?;
+    info!("Fetching in background complete");
+    Ok(())
+}
+
+pub async fn fetch_all_periodically(pool: &Pool) -> AppResult<JoinHandle<()>> {
+    let fetch_enabled: bool = config_value("fetch.enabled").await?;
+    if fetch_enabled {
+        let fetch_interval: u64 = config_value("fetch.interval").await?;
+        debug!(
+            "Background fetch task started with interval {} seconds",
+            fetch_interval
+        );
+        let mut interval = time::interval(Duration::from_secs(fetch_interval));
+        let pool = pool.clone();
+
+        let forever = task::spawn(async move {
+            loop {
+                interval.tick().await;
+                match fetch_all(&pool).await {
+                    Ok(_) => (),
+                    Err(e) => debug!("Error with periodic fetch all: {:?}", e),
+                }
+            }
+        });
+        Ok(forever)
+    } else {
+        debug!("Background fetch task disabled");
+        Ok(task::spawn(async {})) // Intentional no-op
+    }
+}
 
 /// Global static reference to a RwLock'd configuration initialized in `main`
 pub static CONFIG: OnceLock<RwLock<Config>> = OnceLock::new();
@@ -41,12 +80,14 @@ pub fn init_config(config_path: &str) -> Result<()> {
         .set_default("github.per_page", "100")?
         .set_default::<&str, Vec<String>>("github.repos", vec![])?
         .set_default("server.host", "127.0.0.1")?
-        .set_default("server.port", "9838")?
+        .set_default("server.port", "9843")?
         .set_default("server.response.compression.br", false)?
         .set_default("server.response.compression.gzip", true)?
         .set_default("server.response.compression.zstd", true)?
         .set_default("server.response.compression.deflate", true)?
         .set_default("server.response.compression.level", "fastest")?
+        .set_default("fetch.enabled", "true")?
+        .set_default("fetch.interval", "3600")?
         .add_source(config::File::with_name(config_path))
         .add_source(env_source)
         .build()?;
@@ -152,21 +193,30 @@ pub const NEW_CONFIG: &str = r#"# Config files are looked for at
 # (`WALLOWA_CONFIG=wallowa.config.toml`, for example).
 
 # Add any GitHub repos that you'd like to track inside the `repos = []`
-# brackets. For example, "gunrein/wallowa" is currently configured.
+# brackets. For example, "open-telemetry/opentelemetry-rust" is currently configured.
 # Default: [] (empty list)
 [github]
-repos = ["gunrein/wallowa"]
+repos = ["open-telemetry/opentelemetry-rust"]
 # The number of items to fetch per page. Default: 100
 #per_page = "100"
 
 # The database file to use. Default: wallowa.db
 #database = "wallowa.db"
 
+[fetch]
+# The time interval to wait between fetching for additional data, in seconds.
+# Default: 3600 seconds (1 hour)
+#interval = 3600
+# Whether to fetch new data in the background. If this is disabled, then use the
+# `wallowa fetch` CLI command to fetch whenever you'd like.
+# Default: true (enabled)
+#enabled = true
+
 [server]
 # The network address to bind to. Default: 127.0.0.1
 #host = "127.0.0.1"
-# The network port to bind to. Default: 9838
-#port = "9838"
+# The network port to bind to. Default: 9843
+#port = "9843"
 
 [server.response.compression]
 # Compression level to use for HTTP server responses. Options are:
