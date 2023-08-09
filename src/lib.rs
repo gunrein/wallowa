@@ -1,13 +1,17 @@
+use std::path::Path;
 use std::{sync::OnceLock, time::Duration};
 
 use anyhow::Result;
 use config::Config;
 use db::Pool;
+use tokio::fs::{try_exists, DirBuilder, OpenOptions};
+use tokio::io::AsyncWriteExt;
 use tokio::{
     sync::RwLock,
     task::{self, JoinHandle},
     time,
 };
+use tracing::error;
 use tracing::{debug, info, metadata::LevelFilter};
 use tracing_subscriber::{
     fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
@@ -18,6 +22,7 @@ pub mod db;
 pub mod github;
 pub mod web;
 
+/// Fetch all of the configured data sources in the background one time
 pub async fn fetch_all(pool: &Pool) -> AppResult<()> {
     info!("Fetching in background");
     github::fetch::fetch_all(pool).await?;
@@ -25,6 +30,9 @@ pub async fn fetch_all(pool: &Pool) -> AppResult<()> {
     Ok(())
 }
 
+/// Fetch all of the configured data sources in the background on the interval
+/// configured with `fetch.interval` (default: 1 hour) if `fetch.enabled` is
+/// true (default: true).
 pub async fn fetch_all_periodically(pool: &Pool) -> AppResult<JoinHandle<()>> {
     let fetch_enabled: bool = config_value("fetch.enabled").await?;
     if fetch_enabled {
@@ -97,6 +105,7 @@ pub fn init_config(config_path: &str) -> Result<()> {
     Ok(())
 }
 
+/// Initialize the logging system
 pub fn init_logging(log_format: &Option<String>) -> Result<()> {
     let plain_format = fmt::format()
         .with_level(false)
@@ -170,7 +179,63 @@ where
 
 pub type AppResult<T> = anyhow::Result<T, AppError>;
 
-pub const NEW_GITIGNORE: &str = r#"
+/// Create a new project at the given `path`
+pub async fn create_project(path: &str) -> Result<()> {
+    if try_exists(&path).await? {
+        error!("Directory `{path}` already exists. Cancelled.");
+        return Ok(());
+    }
+
+    DirBuilder::new().recursive(true).create(&path).await?;
+    let project_path = Path::new(&path);
+
+    let mut outfile = OpenOptions::new()
+        .read(false)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(project_path.join("wallowa.config.toml"))
+        .await?;
+    outfile.write_all(NEW_CONFIG.as_bytes()).await?;
+    outfile.flush().await?;
+
+    let mut outfile = OpenOptions::new()
+        .read(false)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(project_path.join(".env"))
+        .await?;
+    outfile.write_all(NEW_DOT_ENV.as_bytes()).await?;
+    outfile.flush().await?;
+
+    let mut outfile = OpenOptions::new()
+        .read(false)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(project_path.join(".gitignore"))
+        .await?;
+    outfile.write_all(NEW_GITIGNORE.as_bytes()).await?;
+    outfile.flush().await?;
+
+    info!("A new project has been created at `{path}`");
+    info!("");
+    info!("To get started:");
+    info!("");
+    info!("  1. Add your GitHub repos to `wallowa.config.toml`");
+    info!("  2. Add your GitHub access key to `.env`");
+    info!("  3. Fetch initial data: `wallowa fetch` (this can take a while for active repos)");
+    info!("  4. Start the server: `wallowa serve`");
+    info!("  5. Open your browser to https://localhost:9843/");
+    info!("");
+    info!("Check out the documentation at https://localhost:9843/docs/ or https://www.wallowa.io/docs/");
+    info!("");
+    info!("Enjoy!");
+    Ok(())
+}
+
+const NEW_GITIGNORE: &str = r#"
 # Avoid committing sensitive environment variables to source control
 .env
 
@@ -180,12 +245,12 @@ wallowa.db.wal
 #wallowa.db
 "#;
 
-pub const NEW_DOT_ENV: &str = r#"# Put your authentication keys in this file to avoid committing
+const NEW_DOT_ENV: &str = r#"# Put your authentication keys in this file to avoid committing
 # them to source control.
 WALLOWA_GITHUB_AUTH_TOKEN='YOUR_TOKEN'
 "#;
 
-pub const NEW_CONFIG: &str = r#"# Config files are looked for at
+const NEW_CONFIG: &str = r#"# Config files are loaded from
 # `wallowa.config.[toml | json | yaml | ini | ron | json5]` by default.
 # This file is in [TOML](https://github.com/toml-lang/toml) format.
 # You can specify a config file to use with the `wallowa --config CONFIG`
