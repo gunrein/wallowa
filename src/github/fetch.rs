@@ -40,8 +40,9 @@ pub async fn fetch_pulls(pool: &Pool, owner: &str, repo: &str) -> Result<()> {
     let mut conn = pool.get()?;
 
     // Select the most recent updated_at date and etag from raw_data
-    let watermark = conn.query_row(
-        r#"
+    let watermark = conn
+        .query_row(
+            r#"
 WITH raw AS (
     SELECT
         metadata->>'$.etag' AS etag,
@@ -63,9 +64,9 @@ FROM raw
 ORDER BY updated_at DESC
 LIMIT 1
 "#,
-params![owner, repo], |row| {
-            Ok((row.get::<_, String>(0)?, row.get::<_, DateTime<Utc>>(1)?))
-        })
+            params![owner, repo],
+            |row| Ok((row.get::<_, String>(0)?, row.get::<_, DateTime<Utc>>(1)?)),
+        )
         .optional()?;
     let (etag, modified_since) = if let Some((inner_etag, inner_modified_since)) = watermark.clone()
     {
@@ -242,15 +243,16 @@ pub async fn fetch_all(pool: &Pool) -> Result<DateTime<Utc>> {
     while executed_requests.next().await.is_some() {}
     */
     info!("Fetching from GitHub complete");
-    Ok(latest_fetch_all(pool)?)
+    latest_fetch_all(pool)
 }
 
 /// Return the timestamp of the most recent Github API request that added data
 pub fn latest_fetch_all(pool: &Pool) -> Result<DateTime<Utc>> {
     let conn = pool.get()?;
 
-    let watermark = conn.query_row(
-        r#"
+    let watermark = conn
+        .query_row(
+            r#"
 WITH raw AS (
     SELECT
         unnest(json_transform_strict("data",
@@ -267,9 +269,9 @@ FROM raw
 ORDER BY updated_at DESC
 LIMIT 1
 "#,
-params![], |row| {
-            Ok(row.get::<_, DateTime<Utc>>(0)?)
-        })
+            params![],
+            |row| row.get::<_, DateTime<Utc>>(0),
+        )
         .optional()?;
     if let Some(latest) = watermark {
         Ok(latest)
