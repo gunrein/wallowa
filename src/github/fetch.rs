@@ -28,7 +28,7 @@ use tracing::{debug, error, info};
 ///                 store the latest etag as metadata
 ///             else make the same request again (for the next page)
 ///                 don't store the latest etag as metadata
-pub async fn fetch_pulls_2(pool: &Pool) -> Result<()> {
+pub async fn fetch_pulls_2(pool: &Pool, owner: &str, repo: &str) -> Result<()> {
     let github_api_token: String = config_value("github.auth.token").await?;
     let per_page: String = config_value("github.per_page").await?;
 
@@ -47,15 +47,12 @@ pub async fn fetch_pulls_2(pool: &Pool) -> Result<()> {
         .default_headers(headers)
         .build()?;
 
-    let owner = "gunrein";
-    let repo = "wallowa-old";
-
-    // TODO add page? and per_page safely
-    let request_url = format!(
-        "https://api.github.com/repos/{owner}/{repo}/pulls?state=all&sort=updated&direction=desc",
+    let mut url_opt = Some(format!(
+        "https://api.github.com/repos/{owner}/{repo}/pulls?state=all&sort=updated&direction=desc&per_page={per_page}",
         owner = owner,
-        repo = repo
-    );
+        repo = repo,
+        per_page = per_page,
+    ));
 
     let mut conn = pool.get()?;
 
@@ -84,51 +81,72 @@ ORDER BY updated_at DESC
 LIMIT 1
 "#,
     )?;
-
-    let mut req_builder = client.get(request_url);
-
     let watermark = watermark_query
         .query_row(params![owner, repo], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, DateTime<Utc>>(1)?))
         })
         .optional()?;
-    if let Some((etag, modified_since)) = watermark {
-        if !etag.is_empty() {
-            req_builder = req_builder.header(IF_NONE_MATCH, etag);
-        }
-        req_builder = req_builder.header(IF_MODIFIED_SINCE, modified_since.to_string());
-    }
-    debug!("Request for Github Pulls: {:?}", req_builder);
-
-    let resp = req_builder.send().await?;
-
-    let resp_status = resp.status().clone();
-    let resp_headers = resp.headers().clone();
-    let latest_etag = if let Some(response_etag) = resp_headers.get(ETAG) {
-        response_etag.to_str()?
+    let (etag, modified_since) = if let Some((inner_etag, inner_modified_since)) = watermark.clone()
+    {
+        (inner_etag, inner_modified_since)
     } else {
-        ""
+        (
+            "".to_string(),
+            // This should never fail. If it does then default to about 10 years ago.
+            match Utc.timestamp_opt(0, 0) {
+                LocalResult::Single(default_watermark) => default_watermark,
+                LocalResult::Ambiguous(default_watermark, _) => default_watermark,
+                LocalResult::None => {
+                    debug!("Unexpected 'None' result from Utc.timestamp_opt(0, 0). Using 10 years ago as default watermark.");
+                    Utc::now() - chrono::Duration::days(3652)
+                }
+            },
+        )
     };
 
-    let text = resp.text().await?;
+    while let Some(request_url) = url_opt {
+        let mut req_builder = client.get(request_url);
+        if watermark.is_some() {
+            if !etag.clone().is_empty() {
+                req_builder = req_builder.header(IF_NONE_MATCH, etag.clone());
+            }
+            req_builder = req_builder.header(IF_MODIFIED_SINCE, modified_since.to_string());
+        }
 
-    debug!("Response status code and etag from Github Pulls: {:?}, {:?}", resp_status, latest_etag);
-    if resp_status != StatusCode::OK {
-        // A 304 or error, no need to further process the response
-        return Ok(());
-    }
+        debug!("Request for Github Pulls: {:?}", req_builder);
 
-    // 200 response code; process the response
-    // Write to the database in a transaction
-    // Query the new row to see if there is any new data (compare the newest row with the watermark, or maybe do away with watermark by comparing with existing PR rows/dates)
-    // if there new data, ommit the transaction
-    // if no new data, rollback the transaction since there is no need to store the redundant data
+        let resp = req_builder.send().await?;
 
-    // Insert the raw JSON into the database
-    let tx = conn.transaction()?;
+        let resp_status = resp.status();
+        let resp_headers = resp.headers().clone();
+        let latest_etag = if let Some(response_etag) = resp_headers.get(ETAG) {
+            response_etag.to_str()?
+        } else {
+            ""
+        };
 
-    let mut insert_stmt = tx.prepare(
-        r#"
+        let text = resp.text().await?;
+
+        debug!(
+            "Response status code and etag from Github Pulls: {:?}, {:?}",
+            resp_status, latest_etag
+        );
+        if resp_status != StatusCode::OK {
+            // A 304 or error, no need to further process the response
+            return Ok(());
+        }
+
+        // 200 response code; process the response
+        // Write to the database in a transaction
+        // Query the new row to see if there is any new data (compare the newest row with the watermark, or maybe do away with watermark by comparing with existing PR rows/dates)
+        // if there new data, ommit the transaction
+        // if no new data, rollback the transaction since there is no need to store the redundant data
+
+        // Insert the raw JSON into the database
+        let tx = conn.transaction()?;
+
+        let mut insert_stmt = tx.prepare(
+            r#"
 INSERT INTO wallowa_raw_data (
     "data_source",
     data_type,
@@ -142,13 +160,13 @@ INSERT INTO wallowa_raw_data (
 )
 RETURNING id
 "#,
-    )?;
-    let row_id = insert_stmt.query_row(params![owner, repo, latest_etag, text], |row| {
-        row.get::<_, i64>(0)
-    })?;
+        )?;
+        let row_id = insert_stmt.query_row(params![owner, repo, latest_etag, text], |row| {
+            row.get::<_, i64>(0)
+        })?;
 
-    let mut query_stmt = tx.prepare(
-        r#"
+        let mut query_stmt = tx.prepare(
+            r#"
 -- Figure out if the newly inserted JSON object has any new updates in it.
 -- This approach doesn't require storing state external to the `wallowa_raw_data` table
 -- for tracking the latest data but causes increased query cost when fetching/inserting new data.
@@ -177,31 +195,46 @@ WITH raw AS (
     AND "owner" = ?
     AND repo = ?
     ORDER BY created_at DESC
-),
--- Calculate the maximum (most recent) updated date for the repo
-max_date AS (
-    SELECT MAX(row.updated_at) AS latest
-    FROM raw
-),
--- Select the set of raw data JSON rows with the maximum (latest) updated date for the repo
-rows_with_max_date AS (
-    SELECT raw.id
-    FROM raw, max_date
-    WHERE raw.row.updated_at = max_date.latest
 )
--- Return true if there is only 1 row with the maximum date and that row has the ID of the newly
--- inserted JSON object. True indicates that this new JSON object should be kept.
-SELECT (? IN (SELECT id FROM rows_with_max_date)) AND (SELECT count(id) = 1 FROM rows_with_max_date)
+SELECT COUNT(id) > 0
+FROM raw
+WHERE raw.row.updated_at >= ?
+AND id = ?
 "#,
-    )?;
+        )?;
 
-    let save_new_data =
-        query_stmt.query_row(params![owner, repo, row_id], |row| row.get::<_, bool>(0))?;
+        let save_new_data = query_stmt
+            .query_row(params![owner, repo, modified_since, row_id], |row| {
+                row.get::<_, bool>(0)
+            })?;
 
-    if save_new_data {
-        tx.commit()?;
-    } else {
-        tx.rollback()?;
+        if save_new_data {
+            debug!("New data found for Github Pulls; committing");
+            tx.commit()?;
+
+            // Check for a `next` header in case of another page of results, but only when the current
+            // page of results has new data
+            url_opt = match resp_headers.get(LINK) {
+                Some(link_header) => {
+                    let link_header_str = link_header.to_str()?;
+                    let res = parse_link_header::parse_with_rel(link_header_str);
+                    match res {
+                        Ok(links) => links.get("next").map(|next_link| next_link.raw_uri.clone()),
+                        Err(e) => {
+                            debug!("Error parsing link header: {}", e);
+                            None
+                        }
+                    }
+                }
+                None => None,
+            };
+        } else {
+            debug!("No new data found for Github Pulls; rolling back");
+            tx.rollback()?;
+
+            // No need to fetch more pages since the latest data isn't new
+            url_opt = None;
+        }
     }
 
     Ok(())
