@@ -262,7 +262,7 @@ const NEW_CONFIG: &str = r#"# Config files are loaded from
 # Default: [] (empty list)
 [github]
 repos = ["open-telemetry/opentelemetry-rust"]
-# The number of items to fetch per page. Default: 100
+# The number of items to fetch per page (maximum of 100). Default: 100
 #per_page = "100"
 
 # The database file to use. Default: wallowa.db
