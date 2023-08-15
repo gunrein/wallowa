@@ -1,13 +1,211 @@
 use crate::{config_value, db::Pool};
 use anyhow::{bail, Result};
 use chrono::{DateTime, LocalResult, NaiveDateTime, TimeZone, Utc};
-use duckdb::params;
+use duckdb::{params, OptionalExt};
 use futures::future::join_all;
 use reqwest::{
-    header::{HeaderMap, HeaderValue, AUTHORIZATION, LINK},
-    Url,
+    header::{
+        HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, ETAG, IF_MODIFIED_SINCE, IF_NONE_MATCH, LINK,
+    },
+    StatusCode, Url,
 };
 use tracing::{debug, error, info};
+
+/// Fetch pull requests
+///
+/// TODO test the fetching by adding PRs to the wallowa-old repo
+/// TODO fix this comment
+///
+/// For each repo
+///     Make HTTP request to see if there are any updates since last fetch (if that is available)
+///         https://docs.github.com/en/rest/overview/resources-in-the-rest-api?apiVersion=2022-11-28#conditional-requests
+///     Make HTTP request to list Pulls
+///         - ordered by updatedDate with most recent update first
+///     if ok response
+///         save http body to rawdata
+///         inspect the 'updated' time for the first and last PR in the returned list
+///             if the watermark is within those dates (inclusive) then no more requests are needed
+///                 store the latest etag as metadata
+///             else make the same request again (for the next page)
+///                 don't store the latest etag as metadata
+pub async fn fetch_pulls_2(pool: &Pool) -> Result<()> {
+    let github_api_token: String = config_value("github.auth.token").await?;
+    let per_page: String = config_value("github.per_page").await?;
+
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        ACCEPT,
+        HeaderValue::from_str("application/vnd.github+json")?,
+    );
+    headers.insert("X-GitHub-Api-Version", HeaderValue::from_str("2022-11-28")?);
+    let mut authz_value = HeaderValue::from_str(format!("Bearer {}", github_api_token).as_str())?;
+    authz_value.set_sensitive(true);
+    headers.insert(AUTHORIZATION, authz_value);
+
+    let client = reqwest::ClientBuilder::new()
+        .user_agent("wallowa/0.1.0")
+        .default_headers(headers)
+        .build()?;
+
+    let owner = "gunrein";
+    let repo = "wallowa-old";
+
+    // TODO add page? and per_page safely
+    let request_url = format!(
+        "https://api.github.com/repos/{owner}/{repo}/pulls?state=all&sort=updated&direction=desc",
+        owner = owner,
+        repo = repo
+    );
+
+    let mut conn = pool.get()?;
+
+    // Select the most recent updated_at date and etag from raw_data
+    let mut watermark_query = conn.prepare(
+        r#"
+WITH raw AS (
+    SELECT
+        metadata->>'$.etag' AS etag,
+        metadata->>'$.owner' AS "owner",
+        metadata->>'$.repo' AS repo,
+        unnest(json_transform_strict("data",
+            '[{
+                "updated_at": "TIMESTAMP",
+            }]')) AS row,
+    FROM wallowa_raw_data
+    WHERE "data_source" = 'github_rest_api'
+    AND data_type = 'pulls'
+    AND "owner" = ?
+    AND repo = ?
+    ORDER BY created_at DESC
+)
+SELECT etag, row.updated_at AS updated_at
+FROM raw
+ORDER BY updated_at DESC
+LIMIT 1
+"#,
+    )?;
+
+    let mut req_builder = client.get(request_url);
+
+    let watermark = watermark_query
+        .query_row(params![owner, repo], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, DateTime<Utc>>(1)?))
+        })
+        .optional()?;
+    if let Some((etag, modified_since)) = watermark {
+        if !etag.is_empty() {
+            req_builder = req_builder.header(IF_NONE_MATCH, etag);
+        }
+        req_builder = req_builder.header(IF_MODIFIED_SINCE, modified_since.to_string());
+    }
+    debug!("Request for Github Pulls: {:?}", req_builder);
+
+    let resp = req_builder.send().await?;
+
+    let resp_status = resp.status().clone();
+    let resp_headers = resp.headers().clone();
+    let latest_etag = if let Some(response_etag) = resp_headers.get(ETAG) {
+        response_etag.to_str()?
+    } else {
+        ""
+    };
+
+    let text = resp.text().await?;
+
+    debug!("Response status code and etag from Github Pulls: {:?}, {:?}", resp_status, latest_etag);
+    if resp_status != StatusCode::OK {
+        // A 304 or error, no need to further process the response
+        return Ok(());
+    }
+
+    // 200 response code; process the response
+    // Write to the database in a transaction
+    // Query the new row to see if there is any new data (compare the newest row with the watermark, or maybe do away with watermark by comparing with existing PR rows/dates)
+    // if there new data, ommit the transaction
+    // if no new data, rollback the transaction since there is no need to store the redundant data
+
+    // Insert the raw JSON into the database
+    let tx = conn.transaction()?;
+
+    let mut insert_stmt = tx.prepare(
+        r#"
+INSERT INTO wallowa_raw_data (
+    "data_source",
+    data_type,
+    metadata,
+    "data"
+) VALUES (
+    'github_rest_api',
+    'pulls',
+    to_json({owner: ?, repo: ?, etag: ?}),
+    ?
+)
+RETURNING id
+"#,
+    )?;
+    let row_id = insert_stmt.query_row(params![owner, repo, latest_etag, text], |row| {
+        row.get::<_, i64>(0)
+    })?;
+
+    let mut query_stmt = tx.prepare(
+        r#"
+-- Figure out if the newly inserted JSON object has any new updates in it.
+-- This approach doesn't require storing state external to the `wallowa_raw_data` table
+-- for tracking the latest data but causes increased query cost when fetching/inserting new data.
+--
+-- Extract the necessary fields from the raw JSON structures into `raw`
+WITH raw AS (
+    SELECT
+        id,
+        metadata->>'$.owner' AS "owner",
+        metadata->>'$.repo' AS repo,
+        unnest(json_transform_strict("data",
+            '[{
+                "updated_at": "TIMESTAMP",
+                "base": {
+                    "repo": {
+                        "name": "VARCHAR",
+                        "owner": {
+                            "login": "VARCHAR"
+                        }
+                    }
+                },
+            }]')) AS row,
+    FROM wallowa_raw_data
+    WHERE "data_source" = 'github_rest_api'
+    AND data_type = 'pulls'
+    AND "owner" = ?
+    AND repo = ?
+    ORDER BY created_at DESC
+),
+-- Calculate the maximum (most recent) updated date for the repo
+max_date AS (
+    SELECT MAX(row.updated_at) AS latest
+    FROM raw
+),
+-- Select the set of raw data JSON rows with the maximum (latest) updated date for the repo
+rows_with_max_date AS (
+    SELECT raw.id
+    FROM raw, max_date
+    WHERE raw.row.updated_at = max_date.latest
+)
+-- Return true if there is only 1 row with the maximum date and that row has the ID of the newly
+-- inserted JSON object. True indicates that this new JSON object should be kept.
+SELECT (? IN (SELECT id FROM rows_with_max_date)) AND (SELECT count(id) = 1 FROM rows_with_max_date)
+"#,
+    )?;
+
+    let save_new_data =
+        query_stmt.query_row(params![owner, repo, row_id], |row| row.get::<_, bool>(0))?;
+
+    if save_new_data {
+        tx.commit()?;
+    } else {
+        tx.rollback()?;
+    }
+
+    Ok(())
+}
 
 /// Fetch the latest data from Github
 pub async fn fetch_all(pool: &Pool) -> Result<NaiveDateTime> {
@@ -18,6 +216,12 @@ pub async fn fetch_all(pool: &Pool) -> Result<NaiveDateTime> {
     info!("Fetching from GitHub complete");
     result
 }
+
+// TODO update Pulls fetch logic to:
+// - sort by updated, in order from newest to oldest
+// - for each payload, check whether the watermark has been reached (with the update date for first and last Pull in the payload)
+// - stop requesting more pages when a payload is reached that was updated before the watermark timestamp
+// https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#list-pull-requests
 
 /// Return the timestamp of the most recent API request
 pub fn latest_fetch(pool: &Pool) -> Result<NaiveDateTime> {
