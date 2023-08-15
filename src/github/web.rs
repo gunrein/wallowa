@@ -40,13 +40,14 @@ pub fn data_routes() -> Router<Arc<AppState>, Body> {
 }
 
 async fn fetch_source(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
-    let timestamp = fetch_all(&state.pool).await?;
+    let _timestamp = fetch_all(&state.pool).await?;
 
     Ok(Html(render(
         state,
         "sources/fetch_source.html",
         context! {
-            timestamp => timestamp.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+            // TODO fix this -> timestamp => timestamp.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+            timestamp => "2010-02-03T01:02:03Z".to_string(),
         },
     )?))
 }
