@@ -1,6 +1,6 @@
 use crate::{config_value, db::Pool};
-use anyhow::{bail, Result};
-use chrono::{DateTime, LocalResult, NaiveDateTime, TimeZone, Utc};
+use anyhow::Result;
+use chrono::{DateTime, LocalResult, TimeZone, Utc};
 use duckdb::{params, OptionalExt};
 use reqwest::{
     header::{
@@ -220,7 +220,7 @@ AND id = ?
 }
 
 /// Fetch the latest data from Github
-pub async fn fetch_all(pool: &Pool) -> Result<()> {
+pub async fn fetch_all(pool: &Pool) -> Result<DateTime<Utc>> {
     let repos: Vec<String> = config_value("github.repos").await?;
     info!("Fetching from GitHub");
     for repo_string in repos {
@@ -242,30 +242,48 @@ pub async fn fetch_all(pool: &Pool) -> Result<()> {
     while executed_requests.next().await.is_some() {}
     */
     info!("Fetching from GitHub complete");
-    Ok(())
+    Ok(latest_fetch_all(pool)?)
 }
 
-/// Return the timestamp of the most recent API request
-/// TODO fix this for Github Pulls
-pub fn latest_fetch(pool: &Pool) -> Result<NaiveDateTime> {
+/// Return the timestamp of the most recent Github API request that added data
+pub fn latest_fetch_all(pool: &Pool) -> Result<DateTime<Utc>> {
     let conn = pool.get()?;
 
-    let sql = r#"
-SELECT watermark
-FROM wallowa_watermark
-WHERE prefix(request_url,'https://api.github.com/')
-ORDER BY watermark DESC LIMIT 1
-"#;
-    let watermark: Result<NaiveDateTime, duckdb::Error> =
-        match conn.query_row(sql, [], |row| row.get(0)) {
-            Ok(w) => Ok(w),
-            Err(duckdb::Error::QueryReturnedNoRows) => {
-                Ok(NaiveDateTime::from_timestamp_opt(0, 0).unwrap())
-            } // Return a default if there are no existing rows
-            Err(e) => bail!(e), // Unexpected error
+    let watermark = conn.query_row(
+        r#"
+WITH raw AS (
+    SELECT
+        unnest(json_transform_strict("data",
+            '[{
+                "updated_at": "TIMESTAMP",
+            }]')) AS row,
+    FROM wallowa_raw_data
+    WHERE "data_source" = 'github_rest_api'
+    AND data_type = 'pulls'
+    ORDER BY created_at DESC
+)
+SELECT row.updated_at AS updated_at
+FROM raw
+ORDER BY updated_at DESC
+LIMIT 1
+"#,
+params![], |row| {
+            Ok(row.get::<_, DateTime<Utc>>(0)?)
+        })
+        .optional()?;
+    if let Some(latest) = watermark {
+        Ok(latest)
+    } else {
+        let latest = match Utc.timestamp_opt(0, 0) {
+            LocalResult::Single(default_watermark) => default_watermark,
+            LocalResult::Ambiguous(default_watermark, _) => default_watermark,
+            LocalResult::None => {
+                debug!("Unexpected 'None' result from Utc.timestamp_opt(0, 0). Using 10 years ago as default watermark.");
+                Utc::now() - chrono::Duration::days(3652)
+            }
         };
-
-    Ok(watermark?)
+        Ok(latest)
+    }
 }
 
 /// Parse a repo string of the form `{owner}/{repo}` into a tuple of (owner, repo)

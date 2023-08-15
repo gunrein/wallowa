@@ -19,14 +19,14 @@ use crate::{
     config_value,
     db::Pool,
     github::{
-        fetch::latest_fetch,
+        fetch::latest_fetch_all,
         web::{data_routes, page_routes},
     },
     AppError, AppResult,
 };
 
 pub async fn sources(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
-    let github_last_fetched = latest_fetch(&state.pool)?
+    let github_last_fetched = latest_fetch_all(&state.pool)?
         .format("%Y-%m-%dT%H:%M:%SZ")
         .to_string();
 
