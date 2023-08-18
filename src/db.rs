@@ -22,8 +22,7 @@ pub fn open_db_pool(connection_string: &str, max_size: u32) -> Result<Pool> {
         r#"
 INSTALL 'json';
 LOAD 'json';
--- TODO figure out how to set autocommit to off/false in DuckDB
--- SET autocommit = off;"#,
+"#,
     )?;
 
     run_migrations(&mut conn)?;
@@ -62,12 +61,6 @@ CREATE TABLE IF NOT EXISTS wallowa_raw_data (
     data_type VARCHAR,
     metadata JSON,
     "data" VARCHAR
-);"#,
-        // Create the `wallowa_watermark` table to store the watermark times for API requests
-        r#"
-CREATE TABLE IF NOT EXISTS wallowa_watermark (
-    request_url VARCHAR UNIQUE NOT NULL,
-    watermark TIMESTAMP
 );"#,
     ];
 
