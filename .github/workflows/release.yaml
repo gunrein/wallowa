@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  release:
+    types: [ created ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: release ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64-pc-windows-gnu, x86_64-unknown-linux-musl, x86_64-apple-darwin]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install NPM dependencies
+      run: npm install
+    - name: Build CSS
+      run: npm run build:css
+    - name: Build TS
+      run: npm run build:esbuild
+    - name: Build static
+      run: npm run build:static
+    - name: Run tests
+      run: cargo test --verbose
+    - name: Build
+      run: cargo build --release --verbose --target ${{ matrix.target }}
+    - name: Compress
+      run: zip -9r wallowa-${{ github.ref_name }}.zip target/release/wallowa
