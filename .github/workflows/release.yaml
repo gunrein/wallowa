@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [x86_64-pc-windows-gnu, x86_64-unknown-linux-musl, x86_64-apple-darwin]
+        #target: [x86_64-pc-windows-gnu, x86_64-unknown-linux-musl, aarch64-unknown-linux-musl, x86_64-apple-darwin, aarch64-apple-darwin]
+        target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
     steps:
     - uses: actions/checkout@v3
     - name: Install NPM dependencies
@@ -27,7 +28,9 @@ jobs:
       run: npm run build:static
     - name: Run tests
       run: cargo test --verbose
+    - name: Make sure target is installed
+      run: rustup target add ${{ matrix.target }}
     - name: Build
-      run: cargo build --release --verbose --target ${{ matrix.target }}
+      run: cargo build --release --verbose --target=${{ matrix.target }}
     - name: Compress
-      run: zip -9r wallowa-${{ github.ref_name }}.zip target/release/wallowa
+      run: zip -9r wallowa-${{ matrix.target }}-${{ github.ref_name }}.zip target/release/wallowa
