@@ -51,6 +51,7 @@
               <img class="px-1" src="/static/wallowa-logo.svg" width="32" height="32" alt="Wallowa logo" />
               <span class="px-1 py-0.5">Wallowa</span>  
           </li>
+          {#
           <li
             :class="menuOpen ? '' : 'hidden'"
             class="md:block"
@@ -59,15 +60,16 @@
               <input type="search" placeholder="Search" class="input input-bordered w-76 md:w-40" />
             </div>
           </li>
+          #}
           {# {{ nav_link_with_li("/bookmark", "Bookmarks", current_nav, bookmark_icon) }} #}
           {{ nav_link_with_li("/", "Overview", current_nav, dashboard_icon) }}
           <li>
             {{ nav_link("/github", "GitHub", current_nav, github_icon) }}
-            <ul>
+            <ul class="px-6">
               {{ nav_link_with_li("/github/pr_duration", "PR duration", current_nav) }}
             </ul>
           </li>
-          {{ nav_link_with_li("/pagerduty", "PagerDuty", current_nav, dashboard_icon) }}
+          {# {{ nav_link_with_li("/pagerduty", "PagerDuty", current_nav, dashboard_icon) }} #}
           {{ nav_link_with_li("/sources", "Sources", current_nav, sources_icon) }}
         </ul>
       </nav>
