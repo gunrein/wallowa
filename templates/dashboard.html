@@ -5,5 +5,43 @@
 {% block content %}
 <div class="flex-row p-6">
   <h1 class="text-lg py-2">Dashboard</h1>
+  <div class="flex flex-row">
+    <div class="form-control w-full max-w-xs px-6">
+        <label class="label">
+          <span class="label-text">Date range</span>
+          <span class="label-text-alt">UTC</span>
+        </label>
+        <select id="date_range" class="select select-bordered">
+          <option value="last_seven">Last 7 days</option>
+          <option value="last_thirty" selected>Last 30 days</option>
+          <option value="last_ninety">Last 3 months</option>
+          <option value="last_three_sixty_five">Last 1 year</option>
+          <option value="absolute">Absolute range</option>
+        </select>
+        <div id="absolute_range_inputs" class="form-control w-full max-w-xs hidden">
+            <label class="label">
+                <span class="label-text">From</span>
+                <span class="label-text-alt">UTC</span>
+            </label>
+            <input class="p-2 border rounded" type="date" id="start_date" name="start_date">
+            <label class="label">
+                <span class="label-text">To</span>
+                <span class="label-text-alt">UTC</span>
+            </label>
+            <input class="p-2 border rounded" type="date" id="end_date" name="end_date">
+        </div>
+    </div>    
+  </div>
+
+  <div class="md:w-1/2 py-6">
+    <h3 class="text-sm py-2">{{ github_icon() }} Merged Pull Request duration by Repo</h1>
+
+    <p class="text-xs py-2">
+        The rolling daily average of the number of days elapsed between creating a PR and merging a PR.
+        Unmerged PRs are not included in the average.
+    </p>
+    <div class="py-6" id="vis"></div>
+  </div>
 </div>
+<script type="module" src="/static/dashboard.js"></script>
 {% endblock %}
