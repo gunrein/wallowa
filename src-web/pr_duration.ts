@@ -148,7 +148,10 @@ if (storedExcludedRepos) {
 const repoSelect = document.querySelector<HTMLSelectElement>("#repos");
 if (repoSelect) {
   for (const repo of excludedRepos) {
-    repoSelect.namedItem(repo)?.setAttribute('selected', '')
+    const item = repoSelect.namedItem(repo);
+    if (item) {
+      item.selected = false
+    }
   }  
 }
 
