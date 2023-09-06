@@ -2,9 +2,9 @@
 name = "wallowa"
 authors = ["Greg Unrein"]
 version = "0.1.0"
-description = "TODO"
-license = ""
-repository = ""
+description = "A tool for measuring aspects of your Software Development Life Cycle (SDLC)."
+license = "MIT"
+repository = "https://github.com/gunrein/wallowa"
 edition = "2021"
 
 [dependencies]
