@@ -116,6 +116,7 @@ pub fn init_logging(log_format: &Option<String>) -> Result<()> {
         .compact();
 
     let env_filter = EnvFilter::builder()
+        .with_env_var("WALLOWA_LOG")
         .with_default_directive(LevelFilter::INFO.into())
         .from_env_lossy();
     if let Some(log_format_string) = log_format {
@@ -245,13 +246,17 @@ wallowa.db.wal
 #wallowa.db
 "#;
 
-const NEW_DOT_ENV: &str = r#"# Put your authentication keys in this file to avoid committing
+const NEW_DOT_ENV: &str = r#"# See TODO http://wallowa.io/docs/configuration for documentation
+
+# Put your authentication keys in this file to avoid committing
 # them to source control.
 WALLOWA_GITHUB_AUTH_TOKEN='YOUR_TOKEN'
 "#;
 
-const NEW_CONFIG: &str = r#"# Config files are loaded from
-# `wallowa.config.[toml | json | yaml | ini | ron | json5]` by default.
+const NEW_CONFIG: &str = r#"# See TODO http://wallowa.io/docs/configuration for documentation
+
+# Config files are loaded from
+# `wallowa.config.[toml | json | yaml | ini | ron | json5]` by default (this file).
 # This file is in [TOML](https://github.com/toml-lang/toml) format.
 # You can specify a config file to use with the `wallowa --config CONFIG`
 # argument or using the `WALLOWA_CONFIG` environment variable

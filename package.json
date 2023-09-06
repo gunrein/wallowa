@@ -8,9 +8,9 @@
     "dev:static": "node ./copy-static.js",
     "dev:css": "npx tailwindcss -i ./src-web/app.css -o ./dist/app.css --watch",
     "dev:esbuild": "node ./esbuild.watch.mjs",
-    "dev:backend": "RUST_LOG=info RUST_BACKTRACE=1 cargo run serve",
+    "dev:backend": "WALLOWA_LOG=debug RUST_BACKTRACE=1 cargo run serve",
     "dev": "rm -rf ./dist && npm-run-all --parallel dev:*",
-    "fetch": "RUST_LOG=debug RUST_BACKTRACE=1 cargo run fetch",
+    "fetch": "WALLOWA_LOG=debug RUST_BACKTRACE=1 cargo run fetch",
     "build:ts": "tsc -p tsconfig.json",
     "build:css": "npx tailwindcss -i ./src-web/app.css -o ./dist/app.css --minify",
     "build:esbuild": "node ./esbuild.config.mjs",
@@ -19,7 +19,10 @@
     "build:backend": "cargo build --release",
     "build": "npm-run-all --sequential clean build:css build:esbuild build:static build:backend",
     "preview": "cargo run --release",
-    "clean": "rm -rf ./dist"
+    "clean": "rm -rf ./dist",
+    "docs:dev": "vitepress dev website",
+    "docs:build": "vitepress build website",
+    "docs:preview": "vitepress preview website"
   },
   "devDependencies": {
     "@types/alpinejs": "^3.7.2",
@@ -28,7 +31,8 @@
     "glob": "^10.3.1",
     "npm-run-all": "^4.1.5",
     "tailwindcss": "^3.3.2",
-    "typescript": "^5.1.6"
+    "typescript": "^5.1.6",
+    "vitepress": "^1.0.0-rc.4"
   },
   "dependencies": {
     "@apache-arrow/ts": "^12.0.1",

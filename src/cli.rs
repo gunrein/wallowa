@@ -47,5 +47,9 @@ pub enum Commands {
     },
 
     /// Serve the web app
+    /// 
+    /// The server should not be exposed directly to the Internet since it has not been
+    /// hardened for that environment. Run a proxy in front of the server if you choose
+    /// to expose it to the Internet.
     Serve {},
 }
