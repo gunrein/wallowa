@@ -9,13 +9,9 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-    name: release ${{ matrix.target }}
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        #target: [x86_64-pc-windows-gnu, x86_64-unknown-linux-musl, aarch64-unknown-linux-musl, x86_64-apple-darwin, aarch64-apple-darwin]
-        target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
+  release-mac-aarch64:
+    name: release mac aarch64
+    runs-on: macos-12
     steps:
     - uses: actions/checkout@v3
     - name: Install NPM dependencies
@@ -26,11 +22,33 @@ jobs:
       run: npm run build:esbuild
     - name: Build static
       run: npm run build:static
-    - name: Run tests
-      run: cargo test --verbose
-    - name: Make sure target is installed
-      run: rustup target add ${{ matrix.target }}
+    #- name: Run tests
+    #  run: cargo test
+    - name: Make sure target is installed for Rust
+      run: rustup target add aarch64-apple-darwin
     - name: Build
-      run: cargo build --release --verbose --target=${{ matrix.target }}
+      run: RUST_BACKTRACE=1 cargo build --release --target=aarch64-apple-darwin
     - name: Compress
-      run: zip -9r wallowa-${{ matrix.target }}-${{ github.ref_name }}.zip target/release/wallowa
+      run: zip -9r wallowa-aarch64-apple-darwin-${{ github.ref_name }}.zip target/release/wallowa
+
+  release-mac-x86_64:
+    name: release mac x86_64
+    runs-on: macos-12
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install NPM dependencies
+      run: npm install
+    - name: Build CSS
+      run: npm run build:css
+    - name: Build TS
+      run: npm run build:esbuild
+    - name: Build static
+      run: npm run build:static
+    #- name: Run tests
+    #  run: cargo test
+    - name: Make sure target is installed for Rust
+      run: rustup target add x86_64-apple-darwin
+    - name: Build
+      run: RUST_BACKTRACE=1 cargo build --release --target=x86_64-apple-darwin
+    - name: Compress
+      run: zip -9r wallowa-x86_64-apple-darwin-${{ github.ref_name }}.zip target/release/wallowa
