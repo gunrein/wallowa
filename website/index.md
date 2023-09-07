@@ -9,7 +9,7 @@ hero:
   text: Measure your SDLC
   tagline: v0.1 is an early version with very limited features
   image:
-    src: /docs/screenshots/wallowa-merged-pr-overview-chart.png
+    src: /home-hero-chart.png
     alt: Wallowa average time to merge a GitHub Pull Request
 
   actions:
