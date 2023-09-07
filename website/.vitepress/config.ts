@@ -5,6 +5,7 @@ export default defineConfig({
   title: "Wallowa",
   description: "Measure your Software Development Life Cycle (SDLC)",
   lang: 'en-US',
+  ignoreDeadLinks: 'localhostLinks',
   head: [
     ['link', { rel: 'icon', href: '/wallowa-logo.svg' }],
     ['link', { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }],
