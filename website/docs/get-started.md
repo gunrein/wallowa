@@ -5,7 +5,7 @@
 `wallowa` deploys as a single statically linked binary with data stored in a
 [DuckDB](http://duckdb.org/) database file.
 
-Download the [latest release](https://github.com/gunrein/wallowa/releases), unzip it, and add it to your path.
+Download the [latest release](https://github.com/gunrein/wallowa/releases), unzip it, and add it to your path. If a prebuilt binary is not available for your OS/architecture, see [build from source](#build-from-source) below.
 
 ### Start your first project
 
@@ -21,3 +21,14 @@ Download the [latest release](https://github.com/gunrein/wallowa/releases), unzi
 9. Explore what's available and check out the documentation for the [web UI](web-ui) and [CLI](cli)
 
 Thanks for using `wallowa`!
+
+### Build from source {#build-from-source}
+
+1. Install build-time dependencies
+   - A recent version of [NPM](https://nodejs.org/en/download)
+   - A recent version of the [Rust toolchain](https://www.rust-lang.org/learn/get-started)
+1. Download the [source code for the tagged version you're building](https://github.com/gunrein/wallowa/tags)
+1. In the root directory of the source code, run:
+   1. `npm install`
+   1. `npm run build`
+1. Use the newly-built binary at `target/release/wallowa`
