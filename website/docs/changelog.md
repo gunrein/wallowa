@@ -18,11 +18,13 @@ Follow [these steps](https://duckdb.org/internals/storage#how-to-move-between-st
 before upgrading `wallowa` until DuckDB storage format stability is reached.
 :::
 
-### v0.1.0 on September TODO, 2023 {#v0.1.0}
+### v0.1.0 on September 6, 2023 {#v0.1.0}
 
-TODO - fix link [Download v0.1.0](https://github.com/gunrein/wallowa/releases)
+The initial version of `wallowa`. This version uses DuckDB v0.8.1.
 
-The initial version of `wallowa`. Uses DuckDB v0.8.1.
+The only prebuilt binary for this version is for MacOS on ARM.
+
+[Download v0.1.0](https://github.com/gunrein/wallowa/releases/tag/v0.1.0)
 
 #### Changes
 
