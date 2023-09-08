@@ -89,3 +89,9 @@
   --docsearch-primary-color: var(--vp-c-brand) !important;
 }
 
+.convertkit {
+  padding-top: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
