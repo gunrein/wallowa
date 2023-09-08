@@ -28,7 +28,7 @@ Run the documentation development server with `npm run docs:dev`.
 
 #### Deploy the latest documentation & website content
 
-Cloudflare Pages are used to hose the website and documentation. Deployment is automatic when any changes are merged into the `website_production` branch. There is no need to build the website and documentation locally/elsewhere, it will be generated automatically from the latest source code by the deploy process.
+Cloudflare Pages are used to host the website and documentation. Deployment is automatic when any changes are merged into the `website_production` branch. There is no need to build the website and documentation locally/elsewhere, it will be generated automatically from the latest source code by the deploy process.
 
 ### Improvements to the tool
 
