@@ -54,6 +54,7 @@ Please open a [documentation Pull Request](contributing#documentation) to add ad
 
 There are other tools available for similar insights (in lexicographic order). You can also build something similar yourself.
 
+- [Apache DevLake](https://devlake.apache.org/)
 - [Code Climate Velocity](https://codeclimate.com/velocity)
 - [Cortex](https://www.cortex.io/)
 - [DevStats](https://www.devstats.com/)
