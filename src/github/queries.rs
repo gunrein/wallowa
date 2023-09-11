@@ -5,66 +5,6 @@ use chrono::{DateTime, FixedOffset};
 use duckdb::{params_from_iter, ToSql};
 use tracing::{debug, error};
 
-pub struct CountByRepo {
-    pub owner: String,
-    pub repo: String,
-    pub count: usize,
-}
-
-/// Count the number of commits by repo
-/// TODO fix to query directly against raw data since the `github_commit` table no longer exists (BE CAREFUL TO FILTER DUPLICATES!)
-pub fn count_commits(pool: Pool) -> Result<Vec<CountByRepo>> {
-    debug!("Running `count_commits`");
-
-    let conn = pool.get()?;
-
-    let mut stmt = conn.prepare(
-        r#"
-SELECT "owner", repo, count(*)
-FROM github_commit
-GROUP BY "owner", repo
-ORDER BY "owner", repo;
-"#,
-    )?;
-
-    Ok(stmt
-        .query_map([], |row| {
-            Ok(CountByRepo {
-                owner: row.get(0)?,
-                repo: row.get(1)?,
-                count: row.get(2)?,
-            })
-        })?
-        .collect::<Result<Vec<CountByRepo>, duckdb::Error>>()?)
-}
-
-/// Count the number of pulls by repo
-/// TODO fix to query directly against raw data since the `github_pull` table no longer exists (BE CAREFUL TO FILTER DUPLICATES!)
-pub fn count_pulls(pool: Pool) -> Result<Vec<CountByRepo>> {
-    debug!("Running `count_pulls`");
-
-    let conn = pool.get()?;
-
-    let mut stmt = conn.prepare(
-        r#"
-SELECT "owner", repo, count(*)
-FROM github_pull
-GROUP BY "owner", repo
-ORDER BY "owner", repo;
-"#,
-    )?;
-
-    Ok(stmt
-        .query_map([], |row| {
-            Ok(CountByRepo {
-                owner: row.get(0)?,
-                repo: row.get(1)?,
-                count: row.get(2)?,
-            })
-        })?
-        .collect::<Result<Vec<CountByRepo>, duckdb::Error>>()?)
-}
-
 pub fn select_distinct_repos(pool: &Pool) -> Result<Vec<String>> {
     let conn = pool.get()?;
 
