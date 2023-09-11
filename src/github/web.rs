@@ -20,23 +20,26 @@ use crate::{
 
 use super::{
     fetch::fetch_all,
-    queries::{merged_pr_duration_rolling_daily_average, select_distinct_repos},
+    queries::{merged_pr_duration_rolling_daily_average, select_distinct_repos, closed_pr_count},
 };
 
 /// All page-related routes for GitHub
 pub fn page_routes() -> Router<Arc<AppState>, Body> {
     Router::new()
         .route("/pr_duration", get(github_pr_duration))
+        .route("/closed_pr_count", get(github_closed_pr_count))
         .route("/", get(github_dashboard))
         .route("/fetch", post(fetch_source))
 }
 
 /// All data-related routes for GitHub
 pub fn data_routes() -> Router<Arc<AppState>, Body> {
-    Router::new().route(
-        "/merged_pr_duration_rolling_daily_average.arrow",
-        get(merged_pr_duration_rolling_daily_average_arrow),
-    )
+    Router::new()
+        .route(
+            "/merged_pr_duration_rolling_daily_average.arrow",
+            get(merged_pr_duration_rolling_daily_average_arrow),
+        )
+        .route("/closed_pr_count.arrow", get(closed_pr_count_arrow))
 }
 
 async fn fetch_source(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
@@ -112,6 +115,64 @@ async fn github_pr_duration(State(state): State<Arc<AppState>>) -> AppResult<Htm
         "github/pr_duration.html",
         context! {
             current_nav => "/github/pr_duration",
+            repos => distinct_repos,
+        },
+    )?;
+    Ok(Html(html))
+}
+
+async fn closed_pr_count_arrow(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<MergedPRParams>,
+) -> AppResult<Vec<u8>> {
+    // TODO better error handling for invalid or missing parameters
+    let end_date = if let Some(end) = params.end_date {
+        end
+    } else {
+        let now = chrono::offset::Utc::now();
+        let beginning_of_today = Utc
+            .with_ymd_and_hms(now.year(), now.month(), now.day(), 0, 0, 0)
+            .unwrap();
+        beginning_of_today.fixed_offset()
+    };
+    let start_date = if let Some(start) = params.start_date {
+        start
+    } else {
+        end_date.checked_sub_days(Days::new(30)).unwrap()
+    };
+
+    let results = closed_pr_count(&state.pool, start_date, end_date, &params.repo)?;
+
+    let mut ipc_data: Vec<u8> = Vec::new();
+    if !results.is_empty() {
+        // Use the schema from the first RecordBatch as the IPC schema
+        let schema = results[0].schema();
+        let metadata = schema.metadata.clone();
+        let fields: Vec<Arc<duckdb::arrow::datatypes::Field>> = schema
+            .all_fields()
+            .iter()
+            .map(|field| Arc::new((*field).clone()))
+            .collect();
+        let ipc_schema = Schema::new_with_metadata(fields, metadata);
+
+        let buf = BufWriter::new(&mut ipc_data);
+        let mut writer = FileWriter::try_new(buf, &ipc_schema)?;
+        for batch in results {
+            writer.write(&batch)?;
+        }
+        writer.finish()?;
+    }
+
+    Ok(ipc_data)
+}
+
+async fn github_closed_pr_count(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
+    let distinct_repos = select_distinct_repos(&state.pool)?;
+    let html = render(
+        state,
+        "github/pr_count.html",
+        context! {
+            current_nav => "/github/pr_count",
             repos => distinct_repos,
         },
     )?;

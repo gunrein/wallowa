@@ -152,3 +152,105 @@ ORDER BY 1,2
     }
     Ok(batches)
 }
+
+/// Query the count of GitHub Pull Requests closed by day
+pub fn closed_pr_count(
+    pool: &Pool,
+    start_date: DateTime<FixedOffset>,
+    end_date: DateTime<FixedOffset>,
+    repos: &Vec<String>,
+) -> Result<Vec<RecordBatch>> {
+    debug!("Running `closed_pr_count`");
+
+    let conn = pool.get()?;
+
+    let repo_placeholders = if repos.is_empty() {
+        "SELECT DISTINCT (row.base.repo.owner.login || '/' || row.base.repo.name) AS repo FROM pulls".to_string()
+    } else {
+        let mut placeholders = "?,".repeat(repos.len());
+        placeholders.pop(); // Remove the trailing comma (`,`)
+        format!("SELECT unnest([{}]) AS repo", placeholders)
+    };
+    debug!("repo_placeholders: {:?} for {:?}", repo_placeholders, repos);
+
+    let mut stmt = conn.prepare(&format!(r#"
+WITH calendar_day AS (
+    -- Generate a series of days so that each day has a rolling average represented
+    SELECT CAST(unnest(generate_series(CAST(? AS TIMESTAMP), CAST(? AS TIMESTAMP), interval '1' day)) AS DATE) as "day"
+),
+pulls AS (
+    SELECT
+        id,
+        "data_source",
+        unnest(json_transform_strict("data",
+            '[{{
+                "url": "VARCHAR",
+                "base": {{
+                    "repo": {{
+                        "name": "VARCHAR",
+                        "owner": {{
+                            "login": "VARCHAR"
+                        }}
+                    }}
+                }},
+                "state": "VARCHAR",
+                "created_at": "TIMESTAMP",
+                "closed_at": "TIMESTAMP",
+                "merged_at": "TIMESTAMP",
+                "updated_at": "TIMESTAMP",
+                "draft": "BOOLEAN"
+            }}]')) AS row,
+    FROM wallowa_raw_data
+    WHERE "data_source" = 'github_rest_api'
+    AND data_type = 'pulls'
+),
+repos AS (
+    {repo_placeholders}
+),
+calendar_day_repos AS (
+    -- Generate a series of days for each repo so that each day+repo has a rolling average represented
+    SELECT calendar_day."day", repos.repo FROM calendar_day CROSS JOIN repos
+),
+latest_deduped_pulls AS (
+    SELECT
+        row.url AS "url",
+        (row.base.repo.owner.login || '/' || row.base.repo.name) AS repo,
+        row.created_at AS created_at,
+        row.merged_at AS merged_at,
+        row.updated_at AS updated_at,
+        row.closed_at AS closed_at,
+        row_number() OVER (PARTITION BY "url" ORDER BY updated_at DESC) AS row_number
+    FROM pulls
+    WHERE repo IN (SELECT repo FROM repos)
+),
+pr_count AS (
+    SELECT
+        repo,
+        CAST(closed_at AS DATE) AS closed_date,
+        COUNT(*) AS the_count
+    FROM latest_deduped_pulls
+    WHERE row_number = 1
+    AND closed_date NOT NULL
+    GROUP BY 1, 2
+)
+SELECT calendar_day_repos."day" AS "day", pr_count.repo, pr_count.the_count AS "count"
+FROM calendar_day_repos ASOF LEFT JOIN pr_count ON (calendar_day_repos.repo = pr_count.repo AND calendar_day_repos."day" >= pr_count.closed_date)
+ORDER BY 1,2
+"#, repo_placeholders = repo_placeholders))?;
+
+    let mut params = Vec::new();
+    let start_date_naive = start_date.naive_utc();
+    let end_date_naive = end_date.naive_utc();
+    params.push(start_date_naive.to_sql()?);
+    params.push(end_date_naive.to_sql()?);
+    for repo in repos {
+        params.push(repo.to_sql()?);
+    }
+
+    let rows = stmt.query_arrow(params_from_iter(params))?;
+    let mut batches = Vec::new();
+    for row in rows {
+        batches.push(row);
+    }
+    Ok(batches)
+}
