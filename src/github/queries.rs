@@ -5,6 +5,8 @@ use chrono::{DateTime, FixedOffset};
 use duckdb::{params_from_iter, ToSql};
 use tracing::{debug, error};
 
+/// Get the list of distinct GitHub repository names in the database.
+/// Repository names consist of `owner/repo`.
 pub fn select_distinct_repos(pool: &Pool) -> Result<Vec<String>> {
     let conn = pool.get()?;
 
@@ -42,6 +44,7 @@ FROM pulls
     Ok(repo_names)
 }
 
+/// Query the rolling daily average time to merge GitHub Pull Requests
 pub fn merged_pr_duration_rolling_daily_average(
     pool: &Pool,
     start_date: DateTime<FixedOffset>,
