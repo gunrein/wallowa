@@ -228,7 +228,7 @@ pub async fn create_project(path: &str) -> Result<()> {
     info!("  2. Add your GitHub access key to `.env`");
     info!("  3. Fetch initial data: `wallowa fetch` (this can take a while for active repos)");
     info!("  4. Start the server: `wallowa serve`");
-    info!("  5. Open your browser to https://localhost:9843/");
+    info!("  5. Open your browser to http://localhost:9843/");
     info!("");
     info!("Check out the documentation at https://localhost:9843/docs/ or https://www.wallowa.io/docs/");
     info!("");
