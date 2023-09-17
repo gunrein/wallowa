@@ -208,7 +208,7 @@ repos AS (
     {repo_placeholders}
 ),
 calendar_day_repos AS (
-    -- Generate a series of days for each repo so that each day+repo has a rolling average represented
+    -- Generate a series of days for each repo so that each day+repo has a count represented
     SELECT calendar_day."day", repos.repo FROM calendar_day CROSS JOIN repos
 ),
 latest_deduped_pulls AS (
