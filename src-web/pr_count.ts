@@ -23,7 +23,7 @@ async function doPlot() {
         Plot.axisX({label: "Date" }),
         Plot.ruleY([0]),
         Plot.axisY({label: "Count of closed PRs"}),
-        Plot.barY(data, {x: "day", y: "count", stroke: "repo", tip: "x"}),
+        Plot.rectY(data, { y: "count", x: "day", fill: "repo", interval: "day", fx: "repo" }),
         Plot.crosshairX(data, {x: "day", y: "count"})
       ],
     })
