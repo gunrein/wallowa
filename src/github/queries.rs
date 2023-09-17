@@ -211,7 +211,7 @@ calendar_day_repos AS (
     -- Generate a series of days for each repo so that each day+repo has a count represented
     SELECT calendar_day."day", repos.repo FROM calendar_day CROSS JOIN repos
 ),
-latest_deduped_pulls AS (
+latest_deduped_pulls_window AS (
     SELECT
         row.url AS "url",
         (row.base.repo.owner.login || '/' || row.base.repo.name) AS repo,
@@ -223,18 +223,24 @@ latest_deduped_pulls AS (
     FROM pulls
     WHERE repo IN (SELECT repo FROM repos)
 ),
-pr_count AS (
+latest_deduped_pulls AS (
     SELECT
+        "url",
         repo,
-        CAST(closed_at AS DATE) AS closed_date,
-        COUNT(*) AS the_count
-    FROM latest_deduped_pulls
+        created_at,
+        merged_at,
+        updated_at,
+        closed_at
+    FROM latest_deduped_pulls_window
     WHERE row_number = 1
-    AND closed_date NOT NULL
-    GROUP BY 1, 2
 )
-SELECT calendar_day_repos."day" AS "day", pr_count.repo, pr_count.the_count AS "count"
-FROM calendar_day_repos ASOF LEFT JOIN pr_count ON (calendar_day_repos.repo = pr_count.repo AND calendar_day_repos."day" >= pr_count.closed_date)
+SELECT
+    calendar_day_repos."day" AS "day",
+    calendar_day_repos.repo,
+    COUNT(latest_deduped_pulls.closed_at) AS "count"
+FROM calendar_day_repos
+LEFT OUTER JOIN latest_deduped_pulls ON (calendar_day_repos.repo = latest_deduped_pulls.repo AND calendar_day_repos."day" = CAST(latest_deduped_pulls.closed_at AS DATE))
+GROUP BY 1,2
 ORDER BY 1,2
 "#, repo_placeholders = repo_placeholders))?;
 
