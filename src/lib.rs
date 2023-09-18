@@ -246,14 +246,14 @@ wallowa.db.wal
 #wallowa.db
 "#;
 
-const NEW_DOT_ENV: &str = r#"# See TODO http://wallowa.io/docs/configuration for documentation
+const NEW_DOT_ENV: &str = r#"# See http://wallowa.io/docs/configuration for documentation
 
 # Put your authentication keys in this file to avoid committing
 # them to source control.
 WALLOWA_GITHUB_AUTH_TOKEN='YOUR_TOKEN'
 "#;
 
-const NEW_CONFIG: &str = r#"# See TODO http://wallowa.io/docs/configuration for documentation
+const NEW_CONFIG: &str = r#"# See http://wallowa.io/docs/configuration for documentation
 
 # Config files are loaded from
 # `wallowa.config.[toml | json | yaml | ini | ron | json5]` by default (this file).
