@@ -20,7 +20,7 @@ use crate::{
 
 use super::{
     fetch::fetch_all,
-    queries::{merged_pr_duration_rolling_daily_average, select_distinct_repos, closed_pr_count},
+    queries::{merged_pr_duration_rolling_daily_average, select_distinct_repos, closed_prs},
 };
 
 /// All page-related routes for GitHub
@@ -39,7 +39,7 @@ pub fn data_routes() -> Router<Arc<AppState>, Body> {
             "/merged_pr_duration_rolling_daily_average.arrow",
             get(merged_pr_duration_rolling_daily_average_arrow),
         )
-        .route("/closed_pr_count.arrow", get(closed_pr_count_arrow))
+        .route("/closed_prs.arrow", get(closed_prs_arrow))
 }
 
 async fn fetch_source(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
@@ -121,7 +121,7 @@ async fn github_pr_duration(State(state): State<Arc<AppState>>) -> AppResult<Htm
     Ok(Html(html))
 }
 
-async fn closed_pr_count_arrow(
+async fn closed_prs_arrow(
     State(state): State<Arc<AppState>>,
     Query(params): Query<MergedPRParams>,
 ) -> AppResult<Vec<u8>> {
@@ -141,7 +141,7 @@ async fn closed_pr_count_arrow(
         end_date.checked_sub_days(Days::new(30)).unwrap()
     };
 
-    let results = closed_pr_count(&state.pool, start_date, end_date, &params.repo)?;
+    let results = closed_prs(&state.pool, start_date, end_date, &params.repo)?;
 
     let mut ipc_data: Vec<u8> = Vec::new();
     if !results.is_empty() {

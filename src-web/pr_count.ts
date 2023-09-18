@@ -5,7 +5,7 @@ async function doPlot() {
   ({ range, startDate, endDate } = getDateRange());
   const repos = getRepos();
 
-  const url = new URL('/data/github/closed_pr_count.arrow', window.location.origin);
+  const url = new URL('/data/github/closed_prs.arrow', window.location.origin);
   url.searchParams.append('start_date', startDate.toISOString());
   url.searchParams.append('end_date', endDate.toISOString());
   if (repos.excludedRepos.length > 0) {
@@ -15,16 +15,21 @@ async function doPlot() {
   }
 
   const data = await tableFromIPC(fetch(url))
+
+  // If the date range is larger than 10 weeks, group the data by week instead of day
+  const dayDiff = Math.ceil(Math.abs((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+  const xInterval = (dayDiff > (7 * 10)) ? "week" : "day"
+
   const plot = Plot.plot({
       style: "overflow: visible;",
-      y: {grid: true},
+      y: { grid: true },
       color: { legend: true },
       marks: [
-        Plot.axisX({label: "Date" }),
+        Plot.axisX({ label: "Date", interval: xInterval, ticks: 6 }),
         Plot.ruleY([0]),
-        Plot.axisY({label: "Count of closed PRs"}),
-        Plot.rectY(data, { y: "count", x: "day", fill: "repo", interval: "day", fx: "repo" }),
-        Plot.crosshairX(data, {x: "day", y: "count"})
+        Plot.axisY({ label: `Count of closed PRs by ${xInterval}` }),
+        // @ts-ignore
+        Plot.rectY(data, Plot.binX({ y: "count" }, { x: "closed_at", interval: xInterval, fill: "repo", fx: "repo", tip: true })),
       ],
     })
   const div = document.querySelector("#vis")

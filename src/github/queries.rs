@@ -153,14 +153,14 @@ ORDER BY 1,2
     Ok(batches)
 }
 
-/// Query the count of GitHub Pull Requests closed by day
-pub fn closed_pr_count(
+/// Query the closed GitHub Pull Requests
+pub fn closed_prs(
     pool: &Pool,
     start_date: DateTime<FixedOffset>,
     end_date: DateTime<FixedOffset>,
     repos: &Vec<String>,
 ) -> Result<Vec<RecordBatch>> {
-    debug!("Running `closed_pr_count`");
+    debug!("Running `closed_prs`");
 
     let conn = pool.get()?;
 
@@ -174,11 +174,7 @@ pub fn closed_pr_count(
     debug!("repo_placeholders: {:?} for {:?}", repo_placeholders, repos);
 
     let mut stmt = conn.prepare(&format!(r#"
-WITH calendar_day AS (
-    -- Generate a series of days so that each day has a rolling average represented
-    SELECT CAST(unnest(generate_series(CAST(? AS TIMESTAMP), CAST(? AS TIMESTAMP), interval '1' day)) AS DATE) as "day"
-),
-pulls AS (
+WITH pulls AS (
     SELECT
         id,
         "data_source",
@@ -207,10 +203,6 @@ pulls AS (
 repos AS (
     {repo_placeholders}
 ),
-calendar_day_repos AS (
-    -- Generate a series of days for each repo so that each day+repo has a count represented
-    SELECT calendar_day."day", repos.repo FROM calendar_day CROSS JOIN repos
-),
 latest_deduped_pulls_window AS (
     SELECT
         row.url AS "url",
@@ -222,36 +214,28 @@ latest_deduped_pulls_window AS (
         row_number() OVER (PARTITION BY "url" ORDER BY updated_at DESC) AS row_number
     FROM pulls
     WHERE repo IN (SELECT repo FROM repos)
-),
-latest_deduped_pulls AS (
-    SELECT
-        "url",
-        repo,
-        created_at,
-        merged_at,
-        updated_at,
-        closed_at
-    FROM latest_deduped_pulls_window
-    WHERE row_number = 1
 )
 SELECT
-    calendar_day_repos."day" AS "day",
-    calendar_day_repos.repo,
-    COUNT(latest_deduped_pulls.closed_at) AS "count"
-FROM calendar_day_repos
-LEFT OUTER JOIN latest_deduped_pulls ON (calendar_day_repos.repo = latest_deduped_pulls.repo AND calendar_day_repos."day" = CAST(latest_deduped_pulls.closed_at AS DATE))
-GROUP BY 1,2
-ORDER BY 1,2
+    "url",
+    repo,
+    created_at,
+    merged_at,
+    updated_at,
+    CAST(latest_deduped_pulls_window.closed_at AS DATE) AS closed_at
+FROM latest_deduped_pulls_window
+WHERE row_number = 1
+AND closed_at >= ?
+AND closed_at <= ?
 "#, repo_placeholders = repo_placeholders))?;
 
     let mut params = Vec::new();
     let start_date_naive = start_date.naive_utc();
     let end_date_naive = end_date.naive_utc();
-    params.push(start_date_naive.to_sql()?);
-    params.push(end_date_naive.to_sql()?);
     for repo in repos {
         params.push(repo.to_sql()?);
     }
+    params.push(start_date_naive.to_sql()?);
+    params.push(end_date_naive.to_sql()?);
 
     let rows = stmt.query_arrow(params_from_iter(params))?;
     let mut batches = Vec::new();
