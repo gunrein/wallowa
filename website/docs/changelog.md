@@ -24,7 +24,7 @@ This release adds the [GitHub count of closed Pull Requests by repo](sources/git
 
 Thanks to [@NoriSte](https://github.com/NoriSte) for contributing [PR #14](https://github.com/gunrein/wallowa/pull/14)!
 
-This version uses DuckDB v0.8.1.
+This version uses DuckDB v0.8.1 (the same version as Wallowa v0.1).
 
 The only prebuilt binary for this version is for MacOS on ARM.
 
