@@ -32,9 +32,10 @@ The only prebuilt binary for this version is for MacOS on ARM.
 
 #### Changes
 
-- Added a new [GitHub count of closed Pull Requests by repo chart](sources/github#closed-pr-count)
-- Added the GitHub count of closed Pull Requests by repo chart to the dashboard
 - Fixed an incorrect https URL in the [get started](get-started) content and CLI. Thanks to [@NoriSte](https://github.com/NoriSte) for [PR #14](https://github.com/gunrein/wallowa/pull/14)!
+- Added a new chart for the [count of closed GitHub Pull Requests by repo](sources/github#closed-pr-count)
+- Added the count of closed GitHub Pull Requests by repo chart to the dashboard
+- Improved messages for [CLI fetch](cli#wallowa-fetch) when requests are made and when errors occur on the GitHub API fail
 
 #### Known issues
 
