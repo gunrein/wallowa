@@ -33,14 +33,25 @@
     </div>    
   </div>
 
-  <div class="md:w-1/2 py-6">
-    <h3 class="text-sm py-2">{{ github_icon() }} Merged Pull Request duration by Repo</h1>
+  <div class="md:flex md:flex-row">
+    <div class="md:w-1/2 p-6">
+      <h3 class="text-sm py-2">{{ github_icon() }} Merged Pull Request duration by Repo</h1>
 
-    <p class="text-xs py-2">
-        The rolling daily average of the number of days elapsed between creating a PR and merging a PR.
-        Unmerged PRs are not included in the average.
-    </p>
-    <div class="py-6" id="vis"></div>
+      <p class="text-xs py-2">
+          The rolling daily average of the number of days elapsed between creating a PR and merging a PR.
+          Unmerged PRs are not included in the average.
+      </p>
+      <div class="py-6" id="github_pr_duration"></div>
+    </div>
+
+    <div class="md:w-1/2 p-6">
+      <h3 class="text-sm py-2">{{ github_icon() }} Count of closed Pull Requests</h1>
+
+      <p class="text-xs py-2">
+        The count of Pull Requests closed by day or week.
+      </p>
+      <div class="py-6" id="github_closed_pr_count"></div>
+    </div>
   </div>
 </div>
 <script type="module" src="/static/dashboard.js"></script>
