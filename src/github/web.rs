@@ -172,7 +172,7 @@ async fn github_closed_pr_count(State(state): State<Arc<AppState>>) -> AppResult
         state,
         "github/pr_count.html",
         context! {
-            current_nav => "/github/pr_count",
+            current_nav => "/github/closed_pr_count",
             repos => distinct_repos,
         },
     )?;
