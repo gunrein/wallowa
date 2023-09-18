@@ -18,7 +18,7 @@ The repo filter stores which repos are *not* selected so that any new repos that
 
 The overview dashboard is currently sparse with only one chart at the moment, but will show more information as more sources are added.
 
-The dashboard shows a small version of the [Merged Pull Request duration by Repo](#github-pull-duration) chart.
+The dashboard shows small versions of the [Merged Pull Request duration by Repo](#github-pull-duration) and [Count of closed Pull Requests by repo](#github-closed-pr-count) chart.
 
 ![Screenshot of the dashboard](screenshots/wallowa-dashboard-static.png)
 
@@ -41,3 +41,11 @@ Unmerged PRs are not included in the average. Details can be found on the
 [GitHub sources page](sources/github#pull-duration).
 
 ![Screenshot of the GitHub Pull Request duration by repo chart](screenshots/wallowa-merged-pr-overview-static.png)
+
+##### Count of closed Pull Requests by repo <Badge type="info" text="v0.2.0" /> {#github-closed-pr-count}
+
+The count of Pull Requests closed by day or week.
+Details can be found on the
+[GitHub sources page](sources/github#closed-pr-count).
+
+![Screenshot of the GitHub Pull Request duration by repo chart](screenshots/wallowa-count-closed-pr-overview-static.png)
