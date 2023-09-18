@@ -1,5 +1,5 @@
 use crate::{config_value, db::Pool};
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use chrono::{DateTime, LocalResult, TimeZone, Utc};
 use duckdb::{params, OptionalExt};
 use reqwest::{
@@ -26,7 +26,7 @@ pub async fn fetch_pulls(pool: &Pool, owner: &str, repo: &str) -> Result<()> {
     headers.insert(AUTHORIZATION, authz_value);
 
     let client = reqwest::ClientBuilder::new()
-        .user_agent("wallowa/0.1.0")
+        .user_agent("wallowa/0.2.0")
         .default_headers(headers)
         .build()?;
 
@@ -87,14 +87,14 @@ LIMIT 1
     };
 
     while let Some(request_url) = url_opt {
-        let mut req_builder = client.get(request_url);
+        let mut req_builder = client.get(&request_url);
         if watermark.is_some() {
             if !etag.clone().is_empty() {
                 req_builder = req_builder.header(IF_NONE_MATCH, etag.clone());
             }
             req_builder = req_builder.header(IF_MODIFIED_SINCE, modified_since.to_string());
         }
-
+        info!("Making request to {request_url}");
         debug!("Request for Github Pulls: {:?}", req_builder);
 
         let resp = req_builder.send().await?;
@@ -113,12 +113,15 @@ LIMIT 1
             "Response status code and etag from Github Pulls: {:?}, {:?}",
             resp_status, latest_etag
         );
-        if resp_status != StatusCode::OK {
-            // A 304 or error, no need to further process the response
+        if resp_status == StatusCode::NOT_MODIFIED {
+            // A 304, no need to further process the response
             return Ok(());
+        } else if resp_status.is_server_error() || resp_status.is_client_error() {
+            // Error - stop making requests and bubble up the error
+            return Err(anyhow!("HTTP {resp_status}: '{text}' from request to {request_url}"));
         }
 
-        // 200 response code; process the response
+        // Success response code; process the response
         // The data is inserted into the database to check whether any new data is in the response.
         // If new data is found, it is committed to the database.
         // If no new data is found, the insert is rolled back and the function completes.
