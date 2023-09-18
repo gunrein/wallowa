@@ -36,6 +36,7 @@ The only prebuilt binary for this version is for MacOS on ARM.
 - Added a new chart for the [count of closed GitHub Pull Requests by repo](sources/github#closed-pr-count)
 - Added the count of closed GitHub Pull Requests by repo chart to the dashboard
 - Improved messages for [CLI fetch](cli#wallowa-fetch) when requests are made and when errors occur on the GitHub API fail
+- Show error message when a fetch fails in the [sources web UI](web-ui#sources)
 
 #### Known issues
 
