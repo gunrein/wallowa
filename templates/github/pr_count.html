@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {%- import "icons.html" as icons -%}
 
-{% block title %}Closed GitHub Pull Request count{% endblock %}
+{% block title %}Clound of closed GitHub Pull Requests{% endblock %}
 
 {% block content %}
 <div class="flex-row p-6">
 
-    <h1 class="text-lg py-2">{{ github_icon() }} Closed Pull Request count by repo</h1>
+    <h1 class="text-lg py-2">{{ github_icon() }} Count of closed Pull Requests by repo</h1>
 
     <p class="text-sm py-2">
         The count of Pull Requests closed by day (if date range is &le; 10 weeks) or week (if date range is &gt; 10 weeks).
