@@ -2,40 +2,20 @@ import * as Plot from "@observablehq/plot";
 import { tableFromIPC } from "@apache-arrow/ts";
 
 async function doPlot() {
-  doPlotGitHubPRDuration();
-  doPlotGitHubClosedPRCount();
-}
-
-async function doPlotGitHubPRDuration() {
   ({ range, startDate, endDate } = getDateRange());
-  const url = new URL('/data/github/merged_pr_duration_rolling_daily_average.arrow', window.location.origin);
-  url.searchParams.append('start_date', startDate.toISOString());
-  url.searchParams.append('end_date', endDate.toISOString());
+  const repos = getRepos();
 
-  const data = await tableFromIPC(fetch(url))
-  const plot = Plot.plot({
-      style: "overflow: visible;",
-      y: {grid: true},
-      marks: [
-        Plot.axisX({label: "Date" }),
-        Plot.ruleY([0]),
-        Plot.axisY({label: "Rolling 30-day average number of days to merge"}),
-        Plot.lineY(data, {x: "day", y: "duration", stroke: "repo", tip: "x"}),
-        Plot.crosshairX(data, {x: "day", y: "duration"})
-      ],
-      color: { legend: true },
-    })
-  const div = document.querySelector("#github_pr_duration")
-  if (div) div.replaceChildren(plot)
-}
-
-async function doPlotGitHubClosedPRCount() {
-  ({ range, startDate, endDate } = getDateRange());
   const url = new URL('/data/github/closed_prs.arrow', window.location.origin);
   url.searchParams.append('start_date', startDate.toISOString());
   url.searchParams.append('end_date', endDate.toISOString());
+  if (repos.excludedRepos.length > 0) {
+    for (const repo of repos.selectedRepos) {
+      url.searchParams.append('repo', repo);
+    }
+  }
 
   const data = await tableFromIPC(fetch(url))
+
   // If the date range is larger than 10 weeks, group the data by week instead of day
   const dayDiff = Math.ceil(Math.abs((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
   const xInterval = (dayDiff > (7 * 10)) ? "week" : "day"
@@ -52,7 +32,7 @@ async function doPlotGitHubClosedPRCount() {
         Plot.rectY(data, Plot.binX({ y: "count" }, { x: "closed_at", interval: xInterval, fill: "repo", fx: "repo", tip: true })),
       ],
     })
-  const div = document.querySelector("#github_closed_pr_count")
+  const div = document.querySelector("#vis")
   if (div) div.replaceChildren(plot)
 }
 
@@ -146,6 +126,40 @@ function dateRangeChanged(_ev: Event) {
   doPlot();
 }
 
+function getRepos(): { selectedRepos: string[], excludedRepos: string[] } {
+  let selectedRepos: string[] = [];
+  let excludedRepos: string[] = [];
+  const repoSelect = document.querySelector<HTMLSelectElement>("#repos");
+  if (repoSelect) {
+    const allRepos = Array.from(repoSelect.options).map(d => d.value);
+    selectedRepos = Array.from(repoSelect.selectedOptions).map(d => d.value);
+    excludedRepos = allRepos.filter(option => !selectedRepos.includes(option));
+  }
+
+  return { selectedRepos, excludedRepos };
+}
+
+function reposChanged(_ev: Event) {
+  const repos = getRepos();
+  localStorage.setItem('excludedRepos', JSON.stringify(repos.excludedRepos));
+  doPlot();
+}
+
+const storedExcludedRepos = localStorage.getItem('excludedRepos');
+let excludedRepos: string[] = [];
+if (storedExcludedRepos) {
+  excludedRepos = JSON.parse(storedExcludedRepos);
+}
+const repoSelect = document.querySelector<HTMLSelectElement>("#repos");
+if (repoSelect) {
+  for (const repo of excludedRepos) {
+    const item = repoSelect.namedItem(repo);
+    if (item) {
+      item.selected = false
+    }
+  }  
+}
+
 // Setup the default date range and load any stored date range information
 let endDate = dateAtStartOfDayUTC(new Date());
 let startDate = dateOffsetUTC(endDate, 30);
@@ -176,5 +190,6 @@ updateAbsoluteRange(startDate, endDate);
 document.querySelector("#date_range")?.addEventListener("input", dateRangeChanged);
 document.querySelector("#start_date")?.addEventListener("input", dateRangeChanged);
 document.querySelector("#end_date")?.addEventListener("input", dateRangeChanged);
+document.querySelector("#repos")?.addEventListener("input", reposChanged);
 
 doPlot();

@@ -5,66 +5,8 @@ use chrono::{DateTime, FixedOffset};
 use duckdb::{params_from_iter, ToSql};
 use tracing::{debug, error};
 
-pub struct CountByRepo {
-    pub owner: String,
-    pub repo: String,
-    pub count: usize,
-}
-
-/// Count the number of commits by repo
-/// TODO fix to query directly against raw data since the `github_commit` table no longer exists (BE CAREFUL TO FILTER DUPLICATES!)
-pub fn count_commits(pool: Pool) -> Result<Vec<CountByRepo>> {
-    debug!("Running `count_commits`");
-
-    let conn = pool.get()?;
-
-    let mut stmt = conn.prepare(
-        r#"
-SELECT "owner", repo, count(*)
-FROM github_commit
-GROUP BY "owner", repo
-ORDER BY "owner", repo;
-"#,
-    )?;
-
-    Ok(stmt
-        .query_map([], |row| {
-            Ok(CountByRepo {
-                owner: row.get(0)?,
-                repo: row.get(1)?,
-                count: row.get(2)?,
-            })
-        })?
-        .collect::<Result<Vec<CountByRepo>, duckdb::Error>>()?)
-}
-
-/// Count the number of pulls by repo
-/// TODO fix to query directly against raw data since the `github_pull` table no longer exists (BE CAREFUL TO FILTER DUPLICATES!)
-pub fn count_pulls(pool: Pool) -> Result<Vec<CountByRepo>> {
-    debug!("Running `count_pulls`");
-
-    let conn = pool.get()?;
-
-    let mut stmt = conn.prepare(
-        r#"
-SELECT "owner", repo, count(*)
-FROM github_pull
-GROUP BY "owner", repo
-ORDER BY "owner", repo;
-"#,
-    )?;
-
-    Ok(stmt
-        .query_map([], |row| {
-            Ok(CountByRepo {
-                owner: row.get(0)?,
-                repo: row.get(1)?,
-                count: row.get(2)?,
-            })
-        })?
-        .collect::<Result<Vec<CountByRepo>, duckdb::Error>>()?)
-}
-
+/// Get the list of distinct GitHub repository names in the database.
+/// Repository names consist of `owner/repo`.
 pub fn select_distinct_repos(pool: &Pool) -> Result<Vec<String>> {
     let conn = pool.get()?;
 
@@ -102,6 +44,7 @@ FROM pulls
     Ok(repo_names)
 }
 
+/// Query the rolling daily average time to merge GitHub Pull Requests
 pub fn merged_pr_duration_rolling_daily_average(
     pool: &Pool,
     start_date: DateTime<FixedOffset>,
@@ -201,6 +144,98 @@ ORDER BY 1,2
     for repo in repos {
         params.push(repo.to_sql()?);
     }
+
+    let rows = stmt.query_arrow(params_from_iter(params))?;
+    let mut batches = Vec::new();
+    for row in rows {
+        batches.push(row);
+    }
+    Ok(batches)
+}
+
+/// Query the closed GitHub Pull Requests
+pub fn closed_prs(
+    pool: &Pool,
+    start_date: DateTime<FixedOffset>,
+    end_date: DateTime<FixedOffset>,
+    repos: &Vec<String>,
+) -> Result<Vec<RecordBatch>> {
+    debug!("Running `closed_prs`");
+
+    let conn = pool.get()?;
+
+    let repo_placeholders = if repos.is_empty() {
+        "SELECT DISTINCT (row.base.repo.owner.login || '/' || row.base.repo.name) AS repo FROM pulls".to_string()
+    } else {
+        let mut placeholders = "?,".repeat(repos.len());
+        placeholders.pop(); // Remove the trailing comma (`,`)
+        format!("SELECT unnest([{}]) AS repo", placeholders)
+    };
+    debug!("repo_placeholders: {:?} for {:?}", repo_placeholders, repos);
+
+    let mut stmt = conn.prepare(&format!(r#"
+WITH pulls AS (
+    SELECT
+        id,
+        "data_source",
+        unnest(json_transform_strict("data",
+            '[{{
+                "url": "VARCHAR",
+                "base": {{
+                    "repo": {{
+                        "name": "VARCHAR",
+                        "owner": {{
+                            "login": "VARCHAR"
+                        }}
+                    }}
+                }},
+                "state": "VARCHAR",
+                "created_at": "TIMESTAMP",
+                "closed_at": "TIMESTAMP",
+                "merged_at": "TIMESTAMP",
+                "updated_at": "TIMESTAMP",
+                "draft": "BOOLEAN"
+            }}]')) AS row,
+    FROM wallowa_raw_data
+    WHERE "data_source" = 'github_rest_api'
+    AND data_type = 'pulls'
+),
+repos AS (
+    {repo_placeholders}
+),
+latest_deduped_pulls_window AS (
+    SELECT
+        row.url AS "url",
+        (row.base.repo.owner.login || '/' || row.base.repo.name) AS repo,
+        row.created_at AS created_at,
+        row.merged_at AS merged_at,
+        row.updated_at AS updated_at,
+        row.closed_at AS closed_at,
+        row_number() OVER (PARTITION BY "url" ORDER BY updated_at DESC) AS row_number
+    FROM pulls
+    WHERE repo IN (SELECT repo FROM repos)
+)
+SELECT
+    "url",
+    repo,
+    created_at,
+    merged_at,
+    updated_at,
+    CAST(latest_deduped_pulls_window.closed_at AS DATE) AS closed_at
+FROM latest_deduped_pulls_window
+WHERE row_number = 1
+AND closed_at >= ?
+AND closed_at <= ?
+"#, repo_placeholders = repo_placeholders))?;
+
+    let mut params = Vec::new();
+    let start_date_naive = start_date.naive_utc();
+    let end_date_naive = end_date.naive_utc();
+    for repo in repos {
+        params.push(repo.to_sql()?);
+    }
+    params.push(start_date_naive.to_sql()?);
+    params.push(end_date_naive.to_sql()?);
 
     let rows = stmt.query_arrow(params_from_iter(params))?;
     let mut batches = Vec::new();

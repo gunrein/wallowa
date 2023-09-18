@@ -97,3 +97,74 @@ The parameters in order are:
 - repo_placeholders is one of:
     - `SELECT DISTINCT (row.base.repo.owner.login || '/' || row.base.repo.name) AS repo FROM pulls` for all repos (no filtering to specific repos)
     - `SELECT unnest([{}])` where `{}` is replaced with a `?,` for each repo to include in the filter, and each repo is added as a query parameter
+
+#### Count of closed Pull Requests by repo <Badge type="info" text="v0.2.0" /> {#closed-pr-count}
+
+The count of Pull Requests closed by day (if date range is &le; 10 weeks) or week (if date range is &gt; 10 weeks).
+
+![Screenshot of the count of closed Pull Requests by repo chart](../screenshots/wallowa-count-closed-pr-overview-static.png)
+
+Here is the query used to gather this data (located in the `closed_prs` function in [src/github/queries.rs](https://github.com/gunrein/wallowa/blob/main/src/github/queries.rs) for context).
+
+```sql
+WITH pulls AS (
+    SELECT
+        id,
+        "data_source",
+        unnest(json_transform_strict("data",
+            '[{{
+                "url": "VARCHAR",
+                "base": {{
+                    "repo": {{
+                        "name": "VARCHAR",
+                        "owner": {{
+                            "login": "VARCHAR"
+                        }}
+                    }}
+                }},
+                "state": "VARCHAR",
+                "created_at": "TIMESTAMP",
+                "closed_at": "TIMESTAMP",
+                "merged_at": "TIMESTAMP",
+                "updated_at": "TIMESTAMP",
+                "draft": "BOOLEAN"
+            }}]')) AS row,
+    FROM wallowa_raw_data
+    WHERE "data_source" = 'github_rest_api'
+    AND data_type = 'pulls'
+),
+repos AS (
+    {repo_placeholders}
+),
+latest_deduped_pulls_window AS (
+    SELECT
+        row.url AS "url",
+        (row.base.repo.owner.login || '/' || row.base.repo.name) AS repo,
+        row.created_at AS created_at,
+        row.merged_at AS merged_at,
+        row.updated_at AS updated_at,
+        row.closed_at AS closed_at,
+        row_number() OVER (PARTITION BY "url" ORDER BY updated_at DESC) AS row_number
+    FROM pulls
+    WHERE repo IN (SELECT repo FROM repos)
+)
+SELECT
+    "url",
+    repo,
+    created_at,
+    merged_at,
+    updated_at,
+    CAST(latest_deduped_pulls_window.closed_at AS DATE) AS closed_at
+FROM latest_deduped_pulls_window
+WHERE row_number = 1
+AND closed_at >= ?
+AND closed_at <= ?
+```
+
+The parameters in order are:
+
+- repo_placeholders is one of:
+    - `SELECT DISTINCT (row.base.repo.owner.login || '/' || row.base.repo.name) AS repo FROM pulls` for all repos (no filtering to specific repos)
+    - `SELECT unnest([{}])` where `{}` is replaced with a `?,` for each repo to include in the filter, and each repo is added as a query parameter
+- Start date
+- End date

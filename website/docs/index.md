@@ -16,6 +16,7 @@ Key system-level DORA/SPACE-like measurements are available [out of the box](sou
 your tooling and processes. Go further by using [SQL, data frames, and other familiar data analysis tools](data-analysis) to query any measured aspect of your SDLC that you can think of. Specific features include:
 
 - Chart the [30 day rolling average time to merge GitHub Pull Requests](sources/github#pull-duration) for a given time range
+- Chart the [count of closed GitHub Pull Requests by day or week](sources/github#closed-pr-count) for a given time range
 - Automatically [fetch GitHub Pull Request (PR)](cli#wallowa-fetch) from the [repos you configure](configuration#github-repos)
 
 ### `wallowa` is **not** a "productivity" measurement tool {#philosophy}
