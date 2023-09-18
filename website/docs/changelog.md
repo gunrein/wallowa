@@ -18,6 +18,30 @@ Follow [these steps](https://duckdb.org/internals/storage#how-to-move-between-st
 before upgrading `wallowa` until DuckDB storage format stability is reached.
 :::
 
+### v0.2.0 on September 18, 2023 {#v0.2.0}
+
+This release adds the [GitHub count of closed Pull Requests by repo](sources/github#closed-pr-count) and fixes a bug.
+
+Thanks to [@NoriSte](https://github.com/NoriSte) for contributing [PR #14](https://github.com/gunrein/wallowa/pull/14)!
+
+This version uses DuckDB v0.8.1 (the same version as Wallowa v0.1).
+
+The only prebuilt binary for this version is for MacOS on ARM.
+
+[Download v0.2.0](https://github.com/gunrein/wallowa/releases/tag/v0.2.0)
+
+#### Changes
+
+- Fixed an incorrect https URL in the [get started](get-started) content and CLI. Thanks to [@NoriSte](https://github.com/NoriSte) for [PR #14](https://github.com/gunrein/wallowa/pull/14)!
+- Added a new chart for the [count of closed GitHub Pull Requests by repo](sources/github#closed-pr-count)
+- Added the count of closed GitHub Pull Requests by repo chart to the dashboard
+- Improved messages for [CLI fetch](cli#wallowa-fetch) when requests are made and when errors occur on the GitHub API fail
+- Show error message when a fetch fails in the [sources web UI](web-ui#sources)
+
+#### Known issues
+
+- Background data fetching in the server has a concurrency issue. During a fetch charts and other display elements that require data from the database will be slow to respond.
+
 ### v0.1.0 on September 6, 2023 {#v0.1.0}
 
 The initial version of `wallowa`. This version uses DuckDB v0.8.1.

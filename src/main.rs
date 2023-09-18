@@ -1,6 +1,7 @@
 use clap::Parser;
 use dotenvy::dotenv;
 use tokio::join;
+use tracing::error;
 use wallowa::cli::{Cli, Commands};
 use wallowa::db::open_db_pool;
 use wallowa::web::serve;
@@ -30,7 +31,10 @@ async fn main() -> AppResult<()> {
             let database_string: String = config_value("database").await?;
             let pool = open_db_pool(database_string.as_str(), 1)?;
 
-            fetch_all(&pool).await?;
+            if let Err(error) = fetch_all(&pool).await {
+                let e: anyhow::Error = error.0;
+                error!("{e:#}")
+            };
         }
         Some(Commands::New { path }) => {
             create_project(&path).await?;

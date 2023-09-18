@@ -1,6 +1,6 @@
 {
   "name": "wallowa",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "",
   "scripts": {
@@ -8,9 +8,9 @@
     "dev:static": "node ./copy-static.js",
     "dev:css": "npx tailwindcss -i ./src-web/app.css -o ./dist/app.css --watch",
     "dev:esbuild": "node ./esbuild.watch.mjs",
-    "dev:backend": "WALLOWA_LOG=debug RUST_BACKTRACE=1 cargo run serve",
+    "dev:backend": "WALLOWA_LOG=debug WALLOWA_LOG_FORMAT=full RUST_BACKTRACE=1 cargo run serve",
     "dev": "rm -rf ./dist && npm-run-all --parallel dev:*",
-    "fetch": "WALLOWA_LOG=debug RUST_BACKTRACE=1 cargo run fetch",
+    "fetch": "WALLOWA_LOG=debug WALLOWA_LOG_FORMAT=full RUST_BACKTRACE=1 cargo run fetch",
     "build:ts": "tsc -p tsconfig.json",
     "build:css": "npx tailwindcss -i ./src-web/app.css -o ./dist/app.css --minify",
     "build:esbuild": "node ./esbuild.config.mjs",

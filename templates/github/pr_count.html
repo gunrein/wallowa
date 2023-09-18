@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{%- import "icons.html" as icons -%}
+
+{% block title %}Count of closed GitHub Pull Requests{% endblock %}
+
+{% block content %}
+<div class="flex-row p-6">
+
+    <h1 class="text-lg py-2">{{ github_icon() }} Count of closed Pull Requests by repo</h1>
+
+    <p class="text-sm py-2">
+        The count of Pull Requests closed by day (if date range is &le; 10 weeks) or week (if date range is &gt; 10 weeks).
+    </p>
+    
+    <div class="md:flex flex-row">
+        <div class="form-control w-full max-w-xs px-6">
+            <label class="label">
+                <span class="label-text">Repositories</span>
+            </label>
+            <select id="repos" class="select select-bordered" multiple>
+            {% for repo in repos %}
+                <option value="{{ repo }}" name="{{ repo }}" selected>{{ repo }}</option>
+            {% endfor %}
+            </select>
+        </div>
+        <div class="form-control w-full max-w-xs px-6">
+            <label class="label">
+              <span class="label-text">Date range</span>
+              <span class="label-text-alt">UTC</span>
+            </label>
+            <select id="date_range" class="select select-bordered">
+              <option value="last_seven">Last 7 days</option>
+              <option value="last_thirty" selected>Last 30 days</option>
+              <option value="last_ninety">Last 3 months</option>
+              <option value="last_three_sixty_five">Last 1 year</option>
+              <option value="absolute">Absolute range</option>
+            </select>
+            <div id="absolute_range_inputs" class="form-control w-full max-w-xs hidden">
+                <label class="label">
+                    <span class="label-text">From</span>
+                    <span class="label-text-alt">UTC</span>
+                </label>
+                <input class="p-2 border rounded" type="date" id="start_date" name="start_date">
+                <label class="label">
+                    <span class="label-text">To</span>
+                    <span class="label-text-alt">UTC</span>
+                </label>
+                <input class="p-2 border rounded" type="date" id="end_date" name="end_date">
+            </div>
+        </div>    
+    </div>
+
+    <div class="py-6" id="vis"></div>
+</div>
+
+<script type="module" src="/static/pr_count.js"></script>
+
+{% endblock %}

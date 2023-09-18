@@ -66,6 +66,9 @@
           <li>
             {{ nav_link("/github", "GitHub", current_nav, github_icon) }}
             <ul class="px-6">
+              {{ nav_link_with_li("/github/closed_pr_count", "Closed PR count", current_nav) }}
+            </ul>
+            <ul class="px-6">
               {{ nav_link_with_li("/github/pr_duration", "PR duration", current_nav) }}
             </ul>
           </li>

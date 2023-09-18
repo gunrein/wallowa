@@ -165,7 +165,7 @@ pub fn init_logging(log_format: &Option<String>) -> Result<()> {
 // Adapted from https://github.com/tokio-rs/axum/blob/c97967252de9741b602f400dc2b25c8a33216039/examples/anyhow-error-response/src/main.rs under MIT license
 // Make our own error that wraps `anyhow::Error`.
 #[derive(Debug)]
-pub struct AppError(anyhow::Error);
+pub struct AppError(pub anyhow::Error);
 
 /// This enables using `?` on functions that return `Result<_, anyhow::Error>` to turn them into
 /// `Result<_, AppError>`. That way you don't need to do that manually.
@@ -228,7 +228,7 @@ pub async fn create_project(path: &str) -> Result<()> {
     info!("  2. Add your GitHub access key to `.env`");
     info!("  3. Fetch initial data: `wallowa fetch` (this can take a while for active repos)");
     info!("  4. Start the server: `wallowa serve`");
-    info!("  5. Open your browser to https://localhost:9843/");
+    info!("  5. Open your browser to http://localhost:9843/");
     info!("");
     info!("Check out the documentation at https://localhost:9843/docs/ or https://www.wallowa.io/docs/");
     info!("");
@@ -246,14 +246,14 @@ wallowa.db.wal
 #wallowa.db
 "#;
 
-const NEW_DOT_ENV: &str = r#"# See TODO http://wallowa.io/docs/configuration for documentation
+const NEW_DOT_ENV: &str = r#"# See http://wallowa.io/docs/configuration for documentation
 
 # Put your authentication keys in this file to avoid committing
 # them to source control.
 WALLOWA_GITHUB_AUTH_TOKEN='YOUR_TOKEN'
 "#;
 
-const NEW_CONFIG: &str = r#"# See TODO http://wallowa.io/docs/configuration for documentation
+const NEW_CONFIG: &str = r#"# See http://wallowa.io/docs/configuration for documentation
 
 # Config files are loaded from
 # `wallowa.config.[toml | json | yaml | ini | ron | json5]` by default (this file).
