@@ -7,7 +7,7 @@ title: Home
 hero:
   name: Wallowa
   text: Measure your SDLC
-  tagline: v0.1 is an early version with very limited features
+  tagline: The latest version is still early with very limited features
   image:
     src: /home-hero-chart.png
     alt: Wallowa average time to merge a GitHub Pull Request
