@@ -4,7 +4,7 @@ outline: 3
 
 # Introduction
 
-`wallowa` is (the start of) a tool that I've wanted in my past two engineering leadership roles. It is focused on providing straightforward and transparent insights into system-level behaviors of your [Software Development Life Cycle (SDLC)](https://en.wikipedia.org/wiki/Software_development_process) with both [out-of-the-box DORA/SPACE-like measures](web-ui) and [flexible ad hoc queries using SQL or various dataframe dialects](data-analysis). It is designed to give anyone on your team flexible access to query your software operations and development data using famliar tools.
+`wallowa` wallowa is a data fetch and analysis tool focused on providing straightforward and transparent insights into system-level behaviors of your [Software Development Life Cycle (SDLC)](https://en.wikipedia.org/wiki/Software_development_process) with both [out-of-the-box DORA/SPACE-like measures](web-ui) and [flexible ad hoc queries using SQL or various dataframe dialects](data-analysis). It is designed to give anyone on your team flexible access to query your software operations and development data using famliar tools.
 
 Transparency, openness, and empowerment are all intentionally designed into `wallowa`.
 
