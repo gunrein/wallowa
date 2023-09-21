@@ -162,7 +162,7 @@ for more details.
 
 The network address to bind to.
 
-- **Default**: "127.0.0.1"
+- **Default**: "0.0.0.0"
 - **CLI**: this setting cannot be configured with a CLI argument
 - **Environment variable**: `WALLOWA_SERVER_HOST`
 
@@ -170,7 +170,7 @@ The network address to bind to.
 
 ```toml
 [server]
-host = "127.0.0.1"
+host = "0.0.0.0"
 ```
 
 ### `server.port`

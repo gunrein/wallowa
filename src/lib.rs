@@ -87,7 +87,7 @@ pub fn init_config(config_path: &str) -> Result<()> {
         .set_default("database", "wallowa.db")?
         .set_default("github.per_page", "100")?
         .set_default::<&str, Vec<String>>("github.repos", vec![])?
-        .set_default("server.host", "127.0.0.1")?
+        .set_default("server.host", "0.0.0.0")?
         .set_default("server.port", "9843")?
         .set_default("server.response.compression.br", false)?
         .set_default("server.response.compression.gzip", true)?
@@ -283,8 +283,8 @@ repos = ["open-telemetry/opentelemetry-rust"]
 #enabled = true
 
 [server]
-# The network address to bind to. Default: 127.0.0.1
-#host = "127.0.0.1"
+# The network address to bind to. Default: 0.0.0.0
+#host = "0.0.0.0"
 # The network port to bind to. Default: 9843
 #port = "9843"
 
