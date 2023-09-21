@@ -10,8 +10,10 @@ RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesourc
 RUN apt-get update
 RUN apt-get install -y nodejs libssl-dev git g++ cmake ninja-build
 WORKDIR /usr/wallowa
-COPY ./ /usr/wallowa
-RUN npm install
+RUN --mount=type=bind,source=package.json,target=package.json \
+    --mount=type=bind,source=package-lock.json,target=package-lock.json \
+    npm ci
+COPY ./ ./
 RUN npm run clean
 RUN npm run build:css
 RUN npm run build:esbuild
@@ -19,8 +21,10 @@ RUN npm run build:static
 RUN npm run build:backend
 
 FROM ubuntu:latest
-COPY --from=base /usr/wallowa/target/release/wallowa /usr/local/bin/wallowa
+RUN apt-get update
+RUN apt-get install -y ca-certificates
 RUN mkdir /usr/wallowa
 WORKDIR /usr/wallowa
+COPY --from=base /usr/wallowa/target/release/wallowa /usr/local/bin/wallowa
 ENTRYPOINT ["wallowa"]
 EXPOSE 9843

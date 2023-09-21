@@ -7,7 +7,10 @@
 .env
 .git
 .DS_Store
-package-lock.json
+**/tests/
+**/website/
+.gitignore
+Dockerfile
 
 wallowa.config.*
 
@@ -19,7 +22,3 @@ static/app.css
 *.db.wal
 *.duckdb
 *.duckdb.wal
-
-# Vitepress build files
-website/.vitepress/dist
-website/.vitepress/cache
