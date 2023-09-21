@@ -1,54 +1,45 @@
 name: Release
 
 on:
-  release:
-    types: [ created ]
+  push:
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
-  release-mac-aarch64:
-    name: release mac aarch64
-    runs-on: macos-12
+  docker:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Install NPM dependencies
-      run: npm install
-    - name: Build CSS
-      run: npm run build:css
-    - name: Build TS
-      run: npm run build:esbuild
-    - name: Build static
-      run: npm run build:static
-    #- name: Run tests
-    #  run: cargo test
-    - name: Make sure target is installed for Rust
-      run: rustup target add aarch64-apple-darwin
-    - name: Build
-      run: RUST_BACKTRACE=1 cargo build --release --target=aarch64-apple-darwin
-    - name: Compress
-      run: zip -9r wallowa-aarch64-apple-darwin-${{ github.ref_name }}.zip target/release/wallowa
-
-  release-mac-x86_64:
-    name: release mac x86_64
-    runs-on: macos-12
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install NPM dependencies
-      run: npm install
-    - name: Build CSS
-      run: npm run build:css
-    - name: Build TS
-      run: npm run build:esbuild
-    - name: Build static
-      run: npm run build:static
-    #- name: Run tests
-    #  run: cargo test
-    - name: Make sure target is installed for Rust
-      run: rustup target add x86_64-apple-darwin
-    - name: Build
-      run: RUST_BACKTRACE=1 cargo build --release --target=x86_64-apple-darwin
-    - name: Compress
-      run: zip -9r wallowa-x86_64-apple-darwin-${{ github.ref_name }}.zip target/release/wallowa
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            gunrein/wallowa
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
