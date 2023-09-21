@@ -70,4 +70,29 @@ Commands to use during development:
 
 ### Ship a new release
 
-TODO
+#### Update the changelog
+
+The changelog records the changes made in each version. Create a new changelog entry in [website/docs/changelog.md](changelog) for each version.
+
+- Use absolute URLs for links in the changelog so that the entry can be copy-paste to different locations without breaking the links
+- The audience for the changelog are wallowa users so describe the changes in end-user terms rather than development terms
+
+#### Create the release
+
+To cut a new release from the `main` branch you'll create and push a new Git tag with the new version number. This will trigger the [Release](https://github.com/gunrein/wallowa/blob/main/.github/workflows/release.yaml) GitHub Action to build a Docker image for the new version and push it to [Docker Hub](https://hub.docker.com/).
+
+1. Make sure `main` is up-to-date with all of the changes for the release including documentation updates and the [changelog entry](https://www.wallowa.io/docs/changelog.html)
+2. Create a new "Release" on GitHub at https://github.com/gunrein/wallowa/releases/new
+3. Click on "Choose a tag" and enter the new version number starting with a `v` (e.g. `v0.1.1`) and select "Create new tag: {version you entered} on publish"
+4. Confirm that `main` is selected as the "Target"
+5. Enter "wallowa {version you entered}" for the "Release title", e.g. "wallowa v0.1.1"
+6. Copy-paste the changelog entry into the "Describe this release" field. Confirm that all links are absolute URLs.
+7. Check the "Create a discussion for this release" checkbox so that a new discussion is created and choose the "Announcements" category
+8. Click "Publish release" to publish the release and trigger the Docker image build GitHub Action
+
+#### Publish the latest version of the documentation
+
+1. `git branch website_production` - with the `main` branch up-to-date, switch to the `website_production`
+2. `git pull origin main` - merge the changes from `main` into `website_production`
+3. `git push origin website_production` - push the new content to GitHub. This will trigger a website rebuild and deploy on CloudFlare Pages.
+4. Update the [Docker Hub repository overview] to add a link to the new version's Dockerfile in the "Supported tags and respective Dockerfile links" section

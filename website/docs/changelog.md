@@ -18,6 +18,27 @@ Follow [these steps](https://duckdb.org/internals/storage#how-to-move-between-st
 before upgrading `wallowa` until DuckDB storage format stability is reached.
 :::
 
+### v0.3.0 on September 21, 2023 {#v0.3.0}
+
+Wallowa v0.3.0 to use a Docker image for distribution. The image is available as [`gunrein/wallowa`](https://hub.docker.com/r/gunrein/wallowa) on Docker Hub.
+
+To run this version use the command:
+
+```sh
+docker run -v .:/usr/wallowa:rw -p 127.0.0.1:9843:9843 gunrein/wallowa:0.3.0`
+```
+
+This version uses DuckDB v0.8.1 (the same version as Wallowa v0.2).
+
+#### Changes
+
+- Use a Docker image for distribution
+- Use a GitHub Action to automatically build a new Docker image for the release when a new Git tag is pushed to GitHub
+
+#### Known issues
+
+- Background data fetching in the server has a concurrency issue. During a fetch charts and other display elements that require data from the database will be slow to respond.
+
 ### v0.2.0 on September 18, 2023 {#v0.2.0}
 
 Wallowa v0.2.0 adds a chart for the [​count of closed GitHub Pull Requests by repo](https://www.wallowa.io/docs/sources/github#closed-pr-count)​, improves messages when fetching, and fixes a bug.
