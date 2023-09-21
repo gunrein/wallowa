@@ -20,7 +20,7 @@ RUN npm run build:esbuild
 RUN npm run build:static
 RUN npm run build:backend
 
-FROM ubuntu:latest
+FROM ubuntu:23.10
 RUN apt-get update
 RUN apt-get install -y ca-certificates
 RUN mkdir /usr/wallowa
