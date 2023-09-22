@@ -26,10 +26,16 @@ Setup your development environment by running `npm install` in the root director
 
 Run the documentation development server with `npm run docs:dev`.
 
-#### Deploy the latest documentation & website content
+#### Deploy the latest documentation & website content {#deploy-website}
 
 [Cloudflare Pages](https://pages.cloudflare.com/)
-are used to host the website and documentation. Deployment is automatic when any changes are merged into the `website_production` branch. There is no need to build the website and documentation locally/elsewhere, it will be generated automatically from the latest source code by the deploy process.
+are used to host the website and documentation. Deployment is automatic when any changes are merged into the `website-production` branch. There is no need to build the website and documentation locally/elsewhere, it will be generated automatically from the latest source code by the deploy process.
+
+1. `git checkout website-production` - with the `main` branch up-to-date, switch to the `website-production`
+2. `git pull --rebase origin main` - rebase the changes from `main` into `website-production`
+3. `git push origin website-production` - push the new content to GitHub. This will trigger a website rebuild and deploy on CloudFlare Pages.
+4. Update the [Docker Hub repository overview] to add a link to the new version's Dockerfile in the "Supported tags and respective Dockerfile links" section
+
 
 ### Improvements to the tool
 
@@ -89,10 +95,4 @@ To cut a new release from the `main` branch you'll create and push a new Git tag
 6. Copy-paste the changelog entry into the "Describe this release" field. Confirm that all links are absolute URLs.
 7. Check the "Create a discussion for this release" checkbox so that a new discussion is created and choose the "Announcements" category
 8. Click "Publish release" to publish the release and trigger the Docker image build GitHub Action
-
-#### Publish the latest version of the documentation
-
-1. `git branch website_production` - with the `main` branch up-to-date, switch to the `website_production`
-2. `git pull origin main` - merge the changes from `main` into `website_production`
-3. `git push origin website_production` - push the new content to GitHub. This will trigger a website rebuild and deploy on CloudFlare Pages.
-4. Update the [Docker Hub repository overview] to add a link to the new version's Dockerfile in the "Supported tags and respective Dockerfile links" section
+9. Follow the [instructions to deploy the latest version of the documentation](#deploy-website)
