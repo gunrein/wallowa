@@ -10,6 +10,8 @@ jobs:
   update-website:
     name: update-website
     runs-on: ubuntu-latest
+    permissions:
+      contents:write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
