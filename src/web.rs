@@ -40,6 +40,14 @@ pub async fn sources(State(state): State<Arc<AppState>>) -> AppResult<Html<Strin
     )?))
 }
 
+pub async fn workbench(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
+    Ok(Html(render(
+        state,
+        "workbench.html",
+        context! { current_nav => "/workbench" },
+    )?))
+}
+
 pub async fn dashboard(State(state): State<Arc<AppState>>) -> AppResult<Html<String>> {
     Ok(Html(render(
         state,
@@ -115,6 +123,7 @@ pub async fn serve(host: &str, port: &str, pool: Pool) -> AppResult<()> {
         .nest("/data", Router::new().nest("/github", data_routes()))
         .route("/sources", get(sources))
         .route("/bookmark", get(bookmark))
+        .route("/workbench", get(workbench))
         .route("/", get(dashboard))
         .route("/static/*file", get(static_file))
         .layer(compression_layer)
