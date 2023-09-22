@@ -10,7 +10,7 @@
 1. Navigate to the directory you'd like as the parent to your `wallowa` project directory
 2. Run `wallowa new MY-PROJECT`, replacing `MY-PROJECT` with the name of your project:
 ```sh
-docker run -v .:/usr/wallowa:rw -p 127.0.0.1:9843:9843 gunrein/wallowa new MY-PROJECT
+docker run -v .:/usr/wallowa:rw -p 127.0.0.1:9843:9843 --platform linux/amd64 gunrein/wallowa new MY-PROJECT
 ```
 3. Change directory into the new project:
 ```sh
@@ -21,11 +21,11 @@ cd MY-PROJECT
 6. Fetch data for the first time using [the `wallowa fetch` CLI command](cli#wallowa-fetch):
    ::: info This will take a while the first time if your repo(s) have a large number of PRs
 ```sh
-docker run -v .:/usr/wallowa:rw -p 127.0.0.1:9843:9843 gunrein/wallowa fetch
+docker run -v .:/usr/wallowa:rw -p 127.0.0.1:9843:9843 --platform linux/amd64 gunrein/wallowa fetch
 ```
 7. Start the server using [the `wallowa serve` CLI command](cli#wallowa-serve):
 ```sh
-docker run -v .:/usr/wallowa:rw -p 127.0.0.1:9843:9843 gunrein/wallowa serve
+docker run -v .:/usr/wallowa:rw -p 127.0.0.1:9843:9843 --platform linux/amd64 gunrein/wallowa serve
 ```
 8. Open your browser to http://localhost:9843/
 9. Explore what's available and check out the documentation for the [web UI](web-ui) and [CLI](cli)

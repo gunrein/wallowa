@@ -25,7 +25,7 @@ Wallowa v0.3.0 to use a Docker image for distribution. The image is available as
 To run this version use the command:
 
 ```sh
-docker run -v .:/usr/wallowa:rw -p 127.0.0.1:9843:9843 gunrein/wallowa:0.3.0`
+docker run -v .:/usr/wallowa:rw -p 127.0.0.1:9843:9843 --platform linux/amd64 gunrein/wallowa:0.3.0`
 ```
 
 This version uses DuckDB v0.8.1 (the same version as Wallowa v0.2).
