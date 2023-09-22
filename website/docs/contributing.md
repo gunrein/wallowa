@@ -34,7 +34,7 @@ are used to host the website and documentation. Deployment is automatic when any
 1. `git checkout website-production` - with the `main` branch up-to-date, switch to the `website-production`
 2. `git pull --rebase origin main` - rebase the changes from `main` into `website-production`
 3. `git push origin website-production` - push the new content to GitHub. This will trigger a website rebuild and deploy on CloudFlare Pages.
-4. Update the [Docker Hub repository overview] to add a link to the new version's Dockerfile in the "Supported tags and respective Dockerfile links" section
+4. Update the [Docker Hub repository overview](https://hub.docker.com/repository/docker/gunrein/wallowa/general) to add a link to the new version's Dockerfile in the "Supported tags and respective Dockerfile links" section
 
 
 ### Improvements to the tool
