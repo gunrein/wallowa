@@ -31,11 +31,9 @@ Run the documentation development server with `npm run docs:dev`.
 [Cloudflare Pages](https://pages.cloudflare.com/)
 are used to host the website and documentation. Deployment is automatic when any changes are merged into the `website-production` branch. There is no need to build the website and documentation locally/elsewhere, it will be generated automatically from the latest source code by the deploy process.
 
-1. `git checkout website-production` - with the `main` branch up-to-date, switch to the `website-production`
-2. `git pull --rebase origin main` - rebase the changes from `main` into `website-production`
-3. `git push origin website-production` - push the new content to GitHub. This will trigger a website rebuild and deploy on CloudFlare Pages.
-4. Update the [Docker Hub repository overview](https://hub.docker.com/repository/docker/gunrein/wallowa/general) to add a link to the new version's Dockerfile in the "Supported tags and respective Dockerfile links" section
+All changes from `main` are automatically rebased into `website-production` when a new release/tag is pushed to `main` thanks to the [update-website](https://github.com/gunrein/wallowa/blob/main/.github/workflows/update-website.yaml) GitHub Action. This action can also be [run manually](https://github.com/gunrein/wallowa/actions/workflows/update-website.yaml) to update the website without creating a new release.
 
+The one manual step is to update the [Docker Hub repository overview](https://hub.docker.com/repository/docker/gunrein/wallowa/general) to add a link to the new version's Dockerfile in the "Supported tags and respective Dockerfile links" section.
 
 ### Improvements to the tool
 
