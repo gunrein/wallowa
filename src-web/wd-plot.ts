@@ -1,4 +1,4 @@
-import {LitElement, html} from 'lit';
+import {LitElement} from 'lit';
 import {customElement} from 'lit/decorators.js';
 import * as Plot from "@observablehq/plot";
 
@@ -7,9 +7,7 @@ import * as Plot from "@observablehq/plot";
 class WdPlot extends LitElement {
   render() {
     const plot = Plot.rectY({length: 10000}, Plot.binX({y: "count"}, {x: Math.random})).plot();
-    return html`
-      <div>${plot}</div>
-    `;
+    return plot;
   }
 }
 
