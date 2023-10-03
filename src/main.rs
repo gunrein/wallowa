@@ -3,12 +3,12 @@ use dotenvy::dotenv;
 use tokio::join;
 use tracing::error;
 use wallowa::cli::{Cli, Commands};
-use wallowa::db::open_db_pool;
 use wallowa::web::serve;
 use wallowa::{
     config_value, create_project, fetch_all, fetch_all_periodically, init_config, init_logging,
     AppResult,
 };
+use wallowa_duckdb::open_db_pool;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> AppResult<()> {

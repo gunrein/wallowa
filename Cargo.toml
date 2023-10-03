@@ -1,7 +1,7 @@
 [package]
 name = "wallowa"
 authors = ["Greg Unrein"]
-version = "0.2.0"
+version = "0.4.0"
 description = "A tool for measuring aspects of your Software Development Life Cycle (SDLC)."
 license = "MIT"
 repository = "https://github.com/gunrein/wallowa"
@@ -9,22 +9,21 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-arrow = { version = "41", default-features = false, features = ["ipc"] }
+arrow = { version = "47", default-features = false, features = ["ipc"] }
 axum = "0.6"
+axum-extra = { version = "0.8", features = ["query"] }
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
 clap = { version = "4", features = ["derive", "env", "unicode", "wrap_help", "color"] }
 config = "0.13"
 dotenvy = "0.15"
-duckdb = { version = "0.8", features = ["json", "chrono", "bundled", "r2d2", "serde_json", "extensions-full", "num"] }
 futures = "0.3"
 inquire = "0.6"
 mime_guess = "2.0"
 minijinja-autoreload = "1"
 minijinja = { version = "1", features = ["unicode", "loader"] }
 parse_link_header = "0.3"
-r2d2 = "0.8"
 reqwest = { version = "0.11", features = ["json"] }
-rust-embed = { version = "6.8", features = ["tokio", "mime-guess"] }
+rust-embed = { version = "8", features = ["tokio", "mime-guess"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9"
@@ -32,4 +31,4 @@ tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "signal
 tower-http = { version = "0.4", features = ["trace", "compression-full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-axum-extra = { version = "0.7", features = ["query"] }
+wallowa-duckdb = { path = "wallowa-duckdb" }

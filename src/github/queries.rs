@@ -1,9 +1,9 @@
-use crate::db::Pool;
 use anyhow::Result;
 use arrow::record_batch::RecordBatch;
 use chrono::{DateTime, FixedOffset};
-use duckdb::{params_from_iter, ToSql};
 use tracing::{debug, error};
+use wallowa_duckdb::duckdb::{params_from_iter, ToSql};
+use wallowa_duckdb::Pool;
 
 /// Get the list of distinct GitHub repository names in the database.
 /// Repository names consist of `owner/repo`.
@@ -173,7 +173,8 @@ pub fn closed_prs(
     };
     debug!("repo_placeholders: {:?} for {:?}", repo_placeholders, repos);
 
-    let mut stmt = conn.prepare(&format!(r#"
+    let mut stmt = conn.prepare(&format!(
+        r#"
 WITH pulls AS (
     SELECT
         id,
@@ -226,7 +227,9 @@ FROM latest_deduped_pulls_window
 WHERE row_number = 1
 AND closed_at >= ?
 AND closed_at <= ?
-"#, repo_placeholders = repo_placeholders))?;
+"#,
+        repo_placeholders = repo_placeholders
+    ))?;
 
     let mut params = Vec::new();
     let start_date_naive = start_date.naive_utc();

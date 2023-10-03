@@ -1,7 +1,6 @@
-use crate::{config_value, db::Pool};
+use crate::config_value;
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, LocalResult, TimeZone, Utc};
-use duckdb::{params, OptionalExt};
 use reqwest::{
     header::{
         HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, ETAG, IF_MODIFIED_SINCE, IF_NONE_MATCH, LINK,
@@ -9,6 +8,7 @@ use reqwest::{
     StatusCode,
 };
 use tracing::{debug, info};
+use wallowa_duckdb::{duckdb::params, duckdb::OptionalExt, Pool};
 
 /// Fetch pull requests for a specific owner+repo
 pub async fn fetch_pulls(pool: &Pool, owner: &str, repo: &str) -> Result<()> {
@@ -118,7 +118,9 @@ LIMIT 1
             return Ok(());
         } else if resp_status.is_server_error() || resp_status.is_client_error() {
             // Error - stop making requests and bubble up the error
-            return Err(anyhow!("HTTP {resp_status}: '{text}' from request to {request_url}"));
+            return Err(anyhow!(
+                "HTTP {resp_status}: '{text}' from request to {request_url}"
+            ));
         }
 
         // Success response code; process the response

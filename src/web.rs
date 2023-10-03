@@ -14,10 +14,10 @@ use tokio::signal;
 use tower_http::trace::TraceLayer;
 use tower_http::{compression::CompressionLayer, CompressionLevel};
 use tracing::{debug, info};
+use wallowa_duckdb::Pool;
 
 use crate::{
     config_value,
-    db::Pool,
     github::{
         fetch::latest_fetch_all,
         web::{data_routes, page_routes},

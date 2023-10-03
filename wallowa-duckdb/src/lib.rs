@@ -1,5 +1,6 @@
 use anyhow::Result;
 use duckdb::{Connection, DuckdbConnectionManager};
+pub use duckdb;
 use tracing::{debug, error};
 
 pub type Pool = r2d2::Pool<DuckdbConnectionManager>;
@@ -162,4 +163,20 @@ WHERE "name" = ?;
 
     // Commit the transaction
     Ok(tx.commit()?)
+}
+
+
+pub fn add(left: usize, right: usize) -> usize {
+    left + right
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let result = add(2, 2);
+        assert_eq!(result, 4);
+    }
 }

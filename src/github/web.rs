@@ -9,10 +9,10 @@ use axum::{
 };
 use axum_extra::extract::Query;
 use chrono::{DateTime, Datelike, Days, FixedOffset, TimeZone, Utc};
-use duckdb::arrow::{datatypes::Schema, ipc::writer::FileWriter};
 use minijinja::context;
 use serde::Deserialize;
 use tracing::error;
+use wallowa_duckdb::duckdb::arrow::{datatypes::Schema, ipc::writer::FileWriter};
 
 use crate::{
     web::{render, AppState},
@@ -21,7 +21,7 @@ use crate::{
 
 use super::{
     fetch::fetch_all,
-    queries::{merged_pr_duration_rolling_daily_average, select_distinct_repos, closed_prs},
+    queries::{closed_prs, merged_pr_duration_rolling_daily_average, select_distinct_repos},
 };
 
 /// All page-related routes for GitHub
@@ -52,7 +52,7 @@ async fn fetch_source(State(state): State<Arc<AppState>>) -> AppResult<Html<Stri
             let msg = format!("{err}");
             error!(msg);
             msg
-        },
+        }
     };
     Ok(Html(render(
         state,
@@ -99,7 +99,7 @@ async fn merged_pr_duration_rolling_daily_average_arrow(
         // Use the schema from the first RecordBatch as the IPC schema
         let schema = results[0].schema();
         let metadata = schema.metadata.clone();
-        let fields: Vec<Arc<duckdb::arrow::datatypes::Field>> = schema
+        let fields: Vec<Arc<wallowa_duckdb::duckdb::arrow::datatypes::Field>> = schema
             .all_fields()
             .iter()
             .map(|field| Arc::new((*field).clone()))
@@ -157,7 +157,7 @@ async fn closed_prs_arrow(
         // Use the schema from the first RecordBatch as the IPC schema
         let schema = results[0].schema();
         let metadata = schema.metadata.clone();
-        let fields: Vec<Arc<duckdb::arrow::datatypes::Field>> = schema
+        let fields: Vec<Arc<wallowa_duckdb::duckdb::arrow::datatypes::Field>> = schema
             .all_fields()
             .iter()
             .map(|field| Arc::new((*field).clone()))

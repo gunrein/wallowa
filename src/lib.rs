@@ -3,7 +3,6 @@ use std::{sync::OnceLock, time::Duration};
 
 use anyhow::Result;
 use config::Config;
-use db::Pool;
 use tokio::fs::{try_exists, DirBuilder, OpenOptions};
 use tokio::io::AsyncWriteExt;
 use tokio::{
@@ -16,6 +15,7 @@ use tracing::{debug, info, metadata::LevelFilter};
 use tracing_subscriber::{
     fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
 };
+use wallowa_duckdb::Pool;
 
 pub mod cli;
 pub mod db;
