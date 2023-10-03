@@ -18,7 +18,6 @@ use tracing_subscriber::{
 use wallowa_duckdb::Pool;
 
 pub mod cli;
-pub mod db;
 pub mod github;
 pub mod web;
 
