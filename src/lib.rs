@@ -229,7 +229,7 @@ pub async fn create_project(path: &str) -> Result<()> {
     info!("  4. Start the server: `wallowa serve`");
     info!("  5. Open your browser to http://localhost:9843/");
     info!("");
-    info!("Check out the documentation at https://localhost:9843/docs/ or https://www.wallowa.io/docs/");
+    info!("Check out the documentation at https://localhost:9843/docs/ or https://www.unre.in/wallowa/docs/");
     info!("");
     info!("Enjoy!");
     Ok(())
@@ -245,14 +245,14 @@ wallowa.db.wal
 #wallowa.db
 "#;
 
-const NEW_DOT_ENV: &str = r#"# See http://wallowa.io/docs/configuration for documentation
+const NEW_DOT_ENV: &str = r#"# See https://www.unre.in/wallowa/docs/configuration for documentation
 
 # Put your authentication keys in this file to avoid committing
 # them to source control.
 WALLOWA_GITHUB_AUTH_TOKEN='YOUR_TOKEN'
 "#;
 
-const NEW_CONFIG: &str = r#"# See http://wallowa.io/docs/configuration for documentation
+const NEW_CONFIG: &str = r#"# See https://www.unre.in/wallowa/docs/configuration for documentation
 
 # Config files are loaded from
 # `wallowa.config.[toml | json | yaml | ini | ron | json5]` by default (this file).

@@ -41,7 +41,7 @@ This version uses DuckDB v0.8.1 (the same version as Wallowa v0.2).
 
 ### v0.2.0 on September 18, 2023 {#v0.2.0}
 
-Wallowa v0.2.0 adds a chart for the [​count of closed GitHub Pull Requests by repo](https://www.wallowa.io/docs/sources/github#closed-pr-count)​, improves messages when fetching, and fixes a bug.
+Wallowa v0.2.0 adds a chart for the [​count of closed GitHub Pull Requests by repo](https://www.unre.in/wallowa/docs/sources/github#closed-pr-count)​, improves messages when fetching, and fixes a bug.
 
 Thanks to [@NoriSte](https://github.com/NoriSte) for contributing [PR #14](https://github.com/gunrein/wallowa/pull/14)!
 
@@ -53,11 +53,11 @@ The only prebuilt binary for this version is for MacOS on ARM.
 
 #### Changes
 
-- Fixed an incorrect https URL in the [get started](https://www.wallowa.io/docs/get-started) content and CLI. Thanks to [@NoriSte](https://github.com/NoriSte) for [PR #14](https://github.com/gunrein/wallowa/pull/14)!
-- Added a new chart for the [count of closed GitHub Pull Requests by repo](https://www.wallowa.io/docs/sources/github#closed-pr-count)
+- Fixed an incorrect https URL in the [get started](https://www.unre.in/wallowa/docs/get-started) content and CLI. Thanks to [@NoriSte](https://github.com/NoriSte) for [PR #14](https://github.com/gunrein/wallowa/pull/14)!
+- Added a new chart for the [count of closed GitHub Pull Requests by repo](https://www.unre.in/wallowa/docs/sources/github#closed-pr-count)
 - Added the count of closed GitHub Pull Requests by repo chart to the dashboard
-- Improved messages for [CLI fetch](https://www.wallowa.io/docs/cli#wallowa-fetch) when requests are made and when errors occur on the GitHub API fail
-- Show error message when a fetch fails in the [sources web UI](https://www.wallowa.io/docs/web-ui#sources)
+- Improved messages for [CLI fetch](https://www.unre.in/wallowa/docs/cli#wallowa-fetch) when requests are made and when errors occur on the GitHub API fail
+- Show error message when a fetch fails in the [sources web UI](https://www.unre.in/wallowa/docs/web-ui#sources)
 
 #### Known issues
 
@@ -73,10 +73,10 @@ The only prebuilt binary for this version is for MacOS on ARM.
 
 #### Changes
 
-- [CLI (command line interface)](https://www.wallowa.io/docs/cli) with `fetch`, `new`, `serve`, and `help` commands
-- [Web UI](https://www.wallowa.io/docs/web-ui) with a dashboard, [GitHub Pull Request duration chart](https://www.wallowa.io/docs/sources/github), and index of sources
+- [CLI (command line interface)](https://www.unre.in/wallowa/docs/cli) with `fetch`, `new`, `serve`, and `help` commands
+- [Web UI](https://www.unre.in/wallowa/docs/web-ui) with a dashboard, [GitHub Pull Request duration chart](https://www.unre.in/wallowa/docs/sources/github), and index of sources
 - Server to host the web UI
-- [Documentation](http://www.wallowa.io/docs/)
+- [Documentation](https://www.unre.in/wallowa/docs/)
 
 #### Known issues
 

@@ -28,10 +28,14 @@ Run the documentation development server with `npm run docs:dev`.
 
 #### Deploy the latest documentation & website content {#deploy-website}
 
-[Cloudflare Pages](https://pages.cloudflare.com/)
-are used to host the website and documentation. Deployment is automatic when any changes are merged into the `website-production` branch. There is no need to build the website and documentation locally/elsewhere, it will be generated automatically from the latest source code by the deploy process.
+The website and documentation are hosted on GitHub Pages using a sub-directory of [this repo](https://github.com/gunrein/gunrein.github.com).
 
-All changes from `main` are automatically rebased into `website-production` when a new release/tag is pushed to `main` thanks to the [update-website](https://github.com/gunrein/wallowa/blob/main/.github/workflows/update-website.yaml) GitHub Action. This action can also be [run manually](https://github.com/gunrein/wallowa/actions/workflows/update-website.yaml) to update the website without creating a new release.
+1. Build the latest website and docs locally with `npm run docs:build`
+2. Verify that build with `npm run docs:preview`
+3. Fork https://github.com/gunrein/gunrein.github.com into a different directory
+4. Clean the old build from `gunrein.github.com` with `rm -rf ../gunrein.github.com/wallowa/*`
+5. Copy the build to the fork: `cp -r website/.vitepress/dist/* ../gunrein.github.com/wallowa/.`
+6. Commit and push the changes to `gunrein.github.com` to GitHub
 
 The one manual step is to update the [Docker Hub repository overview](https://hub.docker.com/repository/docker/gunrein/wallowa/general) to add a link to the new version's Dockerfile in the "Supported tags and respective Dockerfile links" section.
 
@@ -85,7 +89,7 @@ The changelog records the changes made in each version. Create a new changelog e
 
 To cut a new release from the `main` branch you'll create and push a new Git tag with the new version number. This will trigger the [Release](https://github.com/gunrein/wallowa/blob/main/.github/workflows/release.yaml) GitHub Action to build a Docker image for the new version and push it to [Docker Hub](https://hub.docker.com/).
 
-1. Make sure `main` is up-to-date with all of the changes for the release including documentation updates and the [changelog entry](https://www.wallowa.io/docs/changelog.html)
+1. Make sure `main` is up-to-date with all of the changes for the release including documentation updates and the [changelog entry](https://www.unre.in/wallowa/docs/changelog.html)
 2. Create a new "Release" on GitHub at https://github.com/gunrein/wallowa/releases/new
 3. Click on "Choose a tag" and enter the new version number starting with a `v` (e.g. `v0.1.1`) and select "Create new tag: {version you entered} on publish"
 4. Confirm that `main` is selected as the "Target"

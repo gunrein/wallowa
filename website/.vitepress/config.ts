@@ -2,6 +2,7 @@ import { defineConfig } from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+  base: '/wallowa/',
   title: "Wallowa",
   description: "Measure your Software Development Life Cycle (SDLC)",
   lang: 'en-US',
